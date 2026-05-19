@@ -82,6 +82,19 @@ export default function AnalyzePage() {
             </span>
           </button>
         </form>
+
+        {/* AI 질문 링크 추가 */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-slate-400">
+            성분 분석 결과가 궁금하신가요?{" "}
+            <Link
+              to="/ai-chat"
+              className="text-cyan-300 hover:underline hover:text-white transition-colors"
+            >
+              AI에게 직접 질문하기 →
+            </Link>
+          </p>
+        </div>
       </main>
     </div>
   );

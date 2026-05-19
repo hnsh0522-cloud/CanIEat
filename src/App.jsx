@@ -5,18 +5,20 @@ import AboutPage from "./pages/AboutPage.jsx";
 import ContactPage from "./pages/ContactPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
+import AiChatPage from "./pages/AiChatPage";
 
 const navItems = [
   { label: "홈", path: "/" },
   { label: "분석하기", path: "/analyze" },
   { label: "소개", path: "/about" },
   { label: "문의", path: "/contact" },
+  { label: "AI 질문", path: "/ai-chat" },
 ];
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="m-0 pt-[50px]">
+      <div className="m-0 min-h-screen bg-[#0f172a] pt-[50px]">
         {/* 네비게이션 */}
         <nav className="fixed left-0 top-0 z-[1000] w-full bg-[#1e293b] border-b border-cyan-300/20">
           <div className="flex items-center justify-between px-6 py-0">
@@ -63,6 +65,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/ai-chat" element={<AiChatPage />} />
         </Routes>
       </div>
     </BrowserRouter>
