@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import useThemeStore from "../store/useThemeStore.js";
+import useAccentClasses from "../hooks/useAccentClasses.js";
 
 const initialForm = {
   foodName: "",
@@ -9,16 +11,23 @@ const initialForm = {
   expiryDate: "",
 };
 
-const inputClassName =
-  "w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none";
-
-const buttonClassName =
-  "w-full rounded-xl border-2 border-cyan-300 bg-transparent px-8 py-3 text-lg font-semibold text-cyan-300 transition-all duration-200 hover:bg-cyan-300 hover:text-gray-900";
-
 export default function AnalyzePage() {
   const [form, setForm] = useState(initialForm);
   const [autoFillMode, setAutoFillMode] = useState(0);
   const navigate = useNavigate();
+  const { isDark } = useThemeStore();
+  const accent = useAccentClasses();
+
+  const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
+  const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
+  const headingTextClass = isDark ? "text-white" : "text-[#1e293b]";
+  const mutedTextClass = isDark ? "text-slate-400" : "text-slate-600";
+  const formBgClass = isDark ? "bg-[#1e293b]" : "bg-[#ffffff]";
+  const labelTextClass = isDark ? "text-slate-300" : "text-slate-700";
+  const inputClassName = isDark
+    ? "w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+    : `w-full rounded-lg border border-slate-300 bg-[#ffffff] px-4 py-3 text-[#1e293b] placeholder-slate-500 ${accent.focusBorderAccent} focus:outline-none`;
+  const buttonClassName = `w-full rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200 ${accent.btnOutline}`;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -56,23 +65,31 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="m-0 box-border min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-[50px] text-slate-100">
+    <div
+      className={`m-0 box-border min-h-screen pt-[50px] ${pageBgClass} ${pageTextClass}`}
+    >
       <main className="mx-auto max-w-2xl px-4 pb-16 pt-10">
-        {/* 상단 제목 */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-            식품 <span className="text-cyan-300">안전 분석</span>
+          <h1
+            className={`text-3xl font-bold tracking-tight ${headingTextClass} md:text-4xl`}
+          >
+            식품 <span className={accent.textAccent}>안전 분석</span>
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400 md:text-base">
+          <p
+            className={`mt-3 text-sm leading-relaxed ${mutedTextClass} md:text-base`}
+          >
             품목 보고 번호 또는 제품명을 입력해주세요
           </p>
         </div>
 
-        {/* 입력 폼 */}
-        <div className="mx-auto w-full max-w-md rounded-2xl border border-cyan-300/20 bg-[#1e293b] p-8 shadow-lg">
+        <div
+          className={`mx-auto w-full max-w-md rounded-2xl border ${accent.borderAccent20} ${formBgClass} p-8 shadow-lg`}
+        >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
                 식품명 (필수)
               </label>
               <input
@@ -87,7 +104,9 @@ export default function AnalyzePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
                 업체명 (선택)
               </label>
               <input
@@ -101,7 +120,9 @@ export default function AnalyzePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
                 품목번호 (선택)
               </label>
               <input
@@ -115,7 +136,9 @@ export default function AnalyzePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
                 원료 및 성분 (선택)
               </label>
               <input
@@ -129,7 +152,9 @@ export default function AnalyzePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
                 소비기한 (선택)
               </label>
               <input
@@ -143,7 +168,9 @@ export default function AnalyzePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
                 알레르기 정보 (비회원일 경우에만)
               </label>
               <input
@@ -171,12 +198,13 @@ export default function AnalyzePage() {
           </form>
         </div>
 
-        {/* 하단 링크 */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-slate-400">
+          <p className={`text-sm ${mutedTextClass}`}>
             <Link
               to="/ai-chat"
-              className="text-cyan-300 transition-colors hover:text-white hover:underline"
+              className={`${accent.textAccent} transition-colors hover:underline ${
+                isDark ? "hover:text-white" : accent.hoverTextAccent
+              }`}
             >
               AI에게 직접 질문하기 →
             </Link>

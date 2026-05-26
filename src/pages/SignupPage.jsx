@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import useThemeStore from "../store/useThemeStore.js";
+import useAccentClasses from "../hooks/useAccentClasses.js";
 
 const allergyCategories = [
   {
@@ -23,6 +25,19 @@ const allergyCategories = [
 export default function SignupPage() {
   const navigate = useNavigate();
   const [selectedAllergies, setSelectedAllergies] = useState([]);
+  const { isDark } = useThemeStore();
+  const accent = useAccentClasses();
+
+  const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
+  const cardBgClass = isDark ? "bg-[#1e293b]" : "bg-[#ffffff]";
+  const headingTextClass = isDark ? "text-white" : "text-[#1e293b]";
+  const mutedTextClass = isDark ? "text-slate-400" : "text-slate-600";
+  const labelTextClass = isDark ? "text-slate-300" : "text-slate-700";
+  const inputClassName = isDark
+    ? "w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+    : `w-full rounded-lg border border-slate-300 bg-[#ffffff] px-4 py-3 text-[#1e293b] placeholder-slate-500 ${accent.focusBorderAccent} focus:outline-none`;
+  const allergyBoxBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
+  const allergyBoxBorderClass = isDark ? "border-slate-600" : "border-slate-200";
 
   const toggleAllergy = (item) => {
     setSelectedAllergies((prev) =>
@@ -36,70 +51,79 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0f172a] py-10">
-      <div className="w-full max-w-lg rounded-2xl border border-cyan-300/20 bg-[#1e293b] p-8 shadow-lg">
-        {/* 제목 */}
-        <h1 className="mb-2 text-center text-3xl font-bold text-white">
+    <div
+      className={`flex min-h-screen items-center justify-center py-10 ${pageBgClass}`}
+    >
+      <div
+        className={`w-full max-w-lg rounded-2xl border ${accent.borderAccent20} ${cardBgClass} p-8 shadow-lg`}
+      >
+        <h1
+          className={`mb-2 text-center text-3xl font-bold ${headingTextClass}`}
+        >
           회원가입
         </h1>
-        <p className="mb-8 text-center text-sm text-slate-400">
+        <p className={`mb-8 text-center text-sm ${mutedTextClass}`}>
           회원가입 후 맞춤 알레르기 알림을 받아보세요
         </p>
 
         <div className="space-y-4">
-          {/* 이름 */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">
+            <label
+              className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+            >
               이름
             </label>
             <input
               type="text"
               placeholder="이름을 입력해주세요"
-              className="w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+              className={inputClassName}
             />
           </div>
 
-          {/* 이메일 */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">
+            <label
+              className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+            >
               이메일
             </label>
             <input
               type="email"
               placeholder="example@email.com"
-              className="w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+              className={inputClassName}
             />
           </div>
 
-          {/* 비밀번호 */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">
+            <label
+              className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+            >
               비밀번호
             </label>
             <input
               type="password"
               placeholder="비밀번호를 입력해주세요"
-              className="w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+              className={inputClassName}
             />
           </div>
 
-          {/* 알레르기 선택 */}
           <div>
-            <label className="mb-3 block text-sm font-medium text-slate-300">
+            <label
+              className={`mb-3 block text-sm font-medium ${labelTextClass}`}
+            >
               알레르기 선택
-              <span className="ml-2 text-xs text-cyan-300">
+              <span className={`ml-2 text-xs ${accent.textAccent}`}>
                 빠른 답변을 위해 이름과 이메일을 입력해주세요.
               </span>
             </label>
 
-            <div className="space-y-4 rounded-lg border border-slate-600 bg-[#0f172a] p-4">
+            <div
+              className={`space-y-4 rounded-lg border ${allergyBoxBorderClass} ${allergyBoxBgClass} p-4`}
+            >
               {allergyCategories.map((cat) => (
                 <div key={cat.category}>
-                  {/* 카테고리 제목 */}
-                  <p className="mb-2 text-xs font-bold text-cyan-300">
+                  <p className={`mb-2 text-xs font-bold ${accent.textAccent}`}>
                     {cat.category}
                   </p>
-                  {/* 체크박스 목록 */}
                   <div className="flex flex-wrap gap-2">
                     {cat.items.map((item) => (
                       <label
@@ -110,9 +134,11 @@ export default function SignupPage() {
                           type="checkbox"
                           checked={selectedAllergies.includes(item)}
                           onChange={() => toggleAllergy(item)}
-                          className="accent-cyan-300"
+                          className={accent.accentColor}
                         />
-                        <span className="text-sm text-slate-300">{item}</span>
+                        <span className={`text-sm ${labelTextClass}`}>
+                          {item}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -120,27 +146,24 @@ export default function SignupPage() {
               ))}
             </div>
 
-            {/* 선택된 알레르기 표시 */}
             {selectedAllergies.length > 0 && (
-              <p className="mt-2 text-xs text-cyan-300">
+              <p className={`mt-2 text-xs ${accent.textAccent}`}>
                 선택된 알레르기: {selectedAllergies.join(", ")}
               </p>
             )}
           </div>
 
-          {/* 회원가입 버튼 */}
           <button
             onClick={handleSubmit}
-            className="mt-2 w-full rounded-xl border-2 border-cyan-300 bg-transparent px-8 py-3 text-lg font-semibold text-cyan-300 transition-all duration-200 hover:bg-cyan-300 hover:text-gray-900"
+            className={`mt-2 w-full rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200 ${accent.btnOutline}`}
           >
             회원가입
           </button>
         </div>
 
-        {/* 로그인 링크 */}
-        <p className="mt-6 text-center text-sm text-slate-400">
+        <p className={`mt-6 text-center text-sm ${mutedTextClass}`}>
           이미 회원이신가요?{" "}
-          <Link to="/login" className="text-cyan-300 hover:underline">
+          <Link to="/login" className={`${accent.textAccent} hover:underline`}>
             로그인으로 돌아가기
           </Link>
         </p>

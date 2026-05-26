@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import useThemeStore from "../store/useThemeStore.js";
+import useAccentClasses from "../hooks/useAccentClasses.js";
 
 const dummyProducts = [
   {
@@ -41,30 +43,49 @@ function DangerPill({ isDanger }) {
 
 export default function ResultPage() {
   const product = dummyProducts[0];
+  const { isDark } = useThemeStore();
+  const accent = useAccentClasses();
+
+  const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
+  const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
+  const headingTextClass = isDark ? "text-white" : "text-[#1e293b]";
+  const mutedTextClass = isDark ? "text-slate-400" : "text-slate-600";
+  const cardBgClass = isDark ? "bg-[#1e293b]" : "bg-[#ffffff]";
+  const surfaceBgClass = isDark ? "bg-slate-950/20" : "bg-slate-100/60";
+  const internalTextClass = isDark ? "text-slate-200" : "text-[#1e293b]";
+  const manufacturerTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
 
   return (
-    <div className="m-0 box-border min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-[50px] text-slate-100">
+    <div
+      className={`m-0 box-border min-h-screen pt-[50px] ${pageBgClass} ${pageTextClass}`}
+    >
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
-        {/* 상단 제목 */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-            분석 <span className="text-cyan-300">결과</span>
+          <h1
+            className={`text-3xl font-bold tracking-tight ${headingTextClass} md:text-4xl`}
+          >
+            분석 <span className={accent.textAccent}>결과</span>
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400 md:text-base">
+          <p
+            className={`mt-3 text-sm leading-relaxed ${mutedTextClass} md:text-base`}
+          >
             검색하신 제품의 알레르기 정보입니다
           </p>
         </div>
 
-        {/* 제품 카드 (API 연동 전: 첫 번째 더미 데이터만 표시) */}
-        <section className="rounded-2xl border border-cyan-300/20 bg-[#1e293b] p-6 shadow-lg">
+        <section
+          className={`rounded-2xl border ${accent.borderAccent20} ${cardBgClass} p-6 shadow-lg`}
+        >
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <h2 className="truncate text-xl font-bold text-white">
+              <h2 className={`truncate text-xl font-bold ${headingTextClass}`}>
                 {product.productName}
               </h2>
-              <p className="mt-1 text-sm text-slate-300">
+              <p className={`mt-1 text-sm ${mutedTextClass}`}>
                 제조사:{" "}
-                <span className="text-slate-100">{product.manufacturer}</span>
+                <span className={manufacturerTextClass}>
+                  {product.manufacturer}
+                </span>
               </p>
             </div>
             <div className="shrink-0">
@@ -72,23 +93,29 @@ export default function ResultPage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-cyan-300/10 bg-slate-950/20 p-4">
-            <p className="text-sm font-semibold text-cyan-300">원재료</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-200">
+          <div
+            className={`mt-4 rounded-xl border ${accent.borderAccent10} ${surfaceBgClass} p-4`}
+          >
+            <p className={`text-sm font-semibold ${accent.textAccent}`}>
+              원재료
+            </p>
+            <p className={`mt-2 text-sm leading-relaxed ${internalTextClass}`}>
               {product.rawMaterial}
             </p>
           </div>
 
-          <div className="mt-4 rounded-xl border border-cyan-300/10 bg-slate-950/20 p-4 space-y-5">
+          <div
+            className={`mt-4 rounded-xl border ${accent.borderAccent10} ${surfaceBgClass} p-4 space-y-5`}
+          >
             <div>
-              <p className="text-sm font-semibold text-cyan-300">
+              <p className={`text-sm font-semibold ${accent.textAccent}`}>
                 포함된 알레르기 성분
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {product.allergies.map((a) => (
                   <span
                     key={a}
-                    className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-300"
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${accent.badgeAccent}`}
                   >
                     {a}
                   </span>
@@ -111,24 +138,25 @@ export default function ResultPage() {
                     </span>
                   ))
                 ) : (
-                  <p className="text-sm text-slate-400">주의 성분이 없습니다</p>
+                  <p className={`text-sm ${mutedTextClass}`}>
+                    주의 성분이 없습니다
+                  </p>
                 )}
               </div>
             </div>
           </div>
         </section>
 
-        {/* 하단 버튼 */}
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             to="/analyze"
-            className="inline-flex items-center justify-center rounded-xl border-2 border-cyan-300 px-6 py-3 text-sm font-semibold text-cyan-300 transition-all duration-200 hover:bg-cyan-300 hover:text-gray-900"
+            className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 ${accent.btnOutline}`}
           >
             다시 검색하기
           </Link>
           <Link
             to="/ai-chat"
-            className="inline-flex items-center justify-center rounded-xl bg-cyan-300 px-6 py-3 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-cyan-400"
+            className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 ${accent.btnSolid}`}
           >
             AI에게 질문하기 →
           </Link>
@@ -137,4 +165,3 @@ export default function ResultPage() {
     </div>
   );
 }
-

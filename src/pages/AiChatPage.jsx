@@ -1,9 +1,25 @@
 import { useState } from "react";
+import useThemeStore from "../store/useThemeStore.js";
+import useAccentClasses from "../hooks/useAccentClasses.js";
 
 export default function AiChatPage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { isDark } = useThemeStore();
+  const accent = useAccentClasses();
+
+  const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
+  const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
+  const headingTextClass = isDark ? "text-white" : "text-[#1e293b]";
+  const mutedTextClass = isDark ? "text-slate-400" : "text-slate-600";
+  const cardBgClass = isDark ? "bg-[#1e293b]" : "bg-[#ffffff]";
+  const assistantBubbleClass = isDark
+    ? "border border-cyan-300/20 bg-[#1e293b] text-slate-200"
+    : `border ${accent.borderAccent20} bg-[#ffffff] text-[#1e293b]`;
+  const textareaClassName = isDark
+    ? "flex-1 resize-none rounded-xl border border-slate-600 bg-[#1e293b] px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+    : `flex-1 resize-none rounded-xl border border-slate-300 bg-[#ffffff] px-4 py-3 text-sm text-[#1e293b] placeholder-slate-500 ${accent.focusBorderAccent} focus:outline-none`;
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -32,25 +48,25 @@ export default function AiChatPage() {
   };
 
   return (
-    <div className="m-0 box-border flex min-h-screen flex-col bg-[#0f172a] pt-[50px] text-slate-100">
-      {/* 상단 제목 */}
-      <div className="border-b border-cyan-300/20 px-6 py-4">
-        <h1 className="text-xl font-bold text-white">🤖 AI 식품 성분 질문</h1>
-        <p className="mt-1 text-sm text-slate-400">
+    <div
+      className={`m-0 box-border flex min-h-screen flex-col pt-[50px] ${pageBgClass} ${pageTextClass}`}
+    >
+      <div className={`border-b ${accent.borderAccent20} px-6 py-4`}>
+        <h1 className={`text-xl font-bold ${headingTextClass}`}>
+          AI 식품 성분 질문
+        </h1>
+        <p className={`mt-1 text-sm ${mutedTextClass}`}>
           식품 성분이나 알레르기에 대해 자유롭게 질문해보세요
         </p>
       </div>
 
-      {/* 메시지 목록 */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="mb-4 text-4xl">🌿</p>
-              <p className="text-sm text-slate-400">
+              <p className={`text-sm ${mutedTextClass}`}>
                 식품 성분, 알레르기 정보에 대해 궁금한 것을 물어보세요
               </p>
-              {/* 예시 질문 */}
               <div className="mt-6 space-y-2">
                 {[
                   "카제인이 유제품 성분인가요?",
@@ -60,7 +76,7 @@ export default function AiChatPage() {
                   <button
                     key={q}
                     onClick={() => setInput(q)}
-                    className="block w-full rounded-lg border border-cyan-300/30 px-4 py-2 text-sm text-cyan-300 transition-colors hover:bg-cyan-300/10"
+                    className={`block w-full rounded-lg border px-4 py-2 text-sm transition-colors ${accent.borderAccent30} ${accent.textAccent} ${accent.hoverBgAccent10}`}
                   >
                     {q}
                   </button>
@@ -77,9 +93,7 @@ export default function AiChatPage() {
           >
             <div
               className={`max-w-[70%] rounded-2xl px-4 py-3 text-sm ${
-                msg.role === "user"
-                  ? "bg-cyan-300 text-gray-900"
-                  : "border border-cyan-300/20 bg-[#1e293b] text-slate-200"
+                msg.role === "user" ? accent.userBubble : assistantBubbleClass
               }`}
             >
               {msg.content}
@@ -87,18 +101,18 @@ export default function AiChatPage() {
           </div>
         ))}
 
-        {/* 로딩 표시 */}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl border border-cyan-300/20 bg-[#1e293b] px-4 py-3 text-sm text-slate-400">
+            <div
+              className={`rounded-2xl border ${accent.borderAccent20} ${cardBgClass} px-4 py-3 text-sm ${mutedTextClass}`}
+            >
               분석 중...
             </div>
           </div>
         )}
       </div>
 
-      {/* 입력창 */}
-      <div className="border-t border-cyan-300/20 px-6 py-4">
+      <div className={`border-t ${accent.borderAccent20} px-6 py-4`}>
         <div className="flex items-end gap-3">
           <textarea
             value={input}
@@ -106,12 +120,12 @@ export default function AiChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="식품 성분이나 알레르기에 대해 질문해보세요 (Enter로 전송)"
             rows={2}
-            className="flex-1 resize-none rounded-xl border border-slate-600 bg-[#1e293b] px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
+            className={textareaClassName}
           />
           <button
             onClick={handleSubmit}
             disabled={!input.trim() || isLoading}
-            className="rounded-xl border-2 border-cyan-300 px-5 py-3 text-sm font-semibold text-cyan-300 transition-all duration-200 hover:bg-cyan-300 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className={`rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${accent.btnOutline}`}
           >
             전송
           </button>
