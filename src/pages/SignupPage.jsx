@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
+import useAuthStore from "../store/useAuthStore";
 
 const allergyCategories = [
   {
@@ -24,7 +25,15 @@ const allergyCategories = [
 
 export default function SignupPage() {
   const navigate = useNavigate();
+
+  // 1. 상태 선언 (누락되었던 input 상태 추가)
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [selectedAllergies, setSelectedAllergies] = useState([]);
+
+  // 2. Custom Hooks 호출 (useAuthStore를 컴포넌트 내부 최상단으로 이동)
+  const { login } = useAuthStore();
   const { isDark } = useThemeStore();
   const accent = useAccentClasses();
 
@@ -37,7 +46,9 @@ export default function SignupPage() {
     ? "w-full rounded-lg border border-slate-600 bg-[#0f172a] px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-300 focus:outline-none"
     : `w-full rounded-lg border border-slate-300 bg-[#ffffff] px-4 py-3 text-[#1e293b] placeholder-slate-500 ${accent.focusBorderAccent} focus:outline-none`;
   const allergyBoxBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
-  const allergyBoxBorderClass = isDark ? "border-slate-600" : "border-slate-200";
+  const allergyBoxBorderClass = isDark
+    ? "border-slate-600"
+    : "border-slate-200";
 
   const toggleAllergy = (item) => {
     setSelectedAllergies((prev) =>
@@ -46,6 +57,11 @@ export default function SignupPage() {
   };
 
   const handleSubmit = () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("모든 항목을 입력해주세요.");
+      return;
+    }
+    login(name, email, selectedAllergies);
     alert("회원가입이 완료되었습니다!");
     navigate("/");
   };
@@ -77,6 +93,8 @@ export default function SignupPage() {
               type="text"
               placeholder="이름을 입력해주세요"
               className={inputClassName}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
 
@@ -90,6 +108,8 @@ export default function SignupPage() {
               type="email"
               placeholder="example@email.com"
               className={inputClassName}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -103,6 +123,8 @@ export default function SignupPage() {
               type="password"
               placeholder="비밀번호를 입력해주세요"
               className={inputClassName}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
@@ -145,7 +167,20 @@ export default function SignupPage() {
                 </div>
               ))}
             </div>
-
+            <div>
+              <label
+                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
+              >
+                이메일
+              </label>
+              <input
+                type="email"
+                placeholder="example@email.com"
+                className={inputClassName}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
             {selectedAllergies.length > 0 && (
               <p className={`mt-2 text-xs ${accent.textAccent}`}>
                 선택된 알레르기: {selectedAllergies.join(", ")}

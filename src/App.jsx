@@ -1,4 +1,10 @@
-import { Link, BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  Link,
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+} from "react-router-dom";
 import HomePage from "./pages/HomePage.jsx";
 import AnalyzePage from "./pages/AnalyzePage.jsx";
 import AboutPage from "./pages/AboutPage.jsx";
@@ -8,6 +14,8 @@ import SignupPage from "./pages/SignupPage.jsx";
 import AiChatPage from "./pages/AiChatPage";
 import ResultPage from "./pages/ResultPage.jsx";
 import useThemeStore from "./store/useThemeStore.js";
+import useAuthStore from "./store/useAuthStore";
+import MyPage from "./pages/MyPage";
 
 const navItems = [
   { label: "홈", path: "/" },
@@ -54,7 +62,12 @@ function MoonIcon({ className = "h-5 w-5" }) {
   );
 }
 
-export default function App() {
+// 네비게이션과 라우터를 정상 구동하기 위해 내부에서 useNavigate를 쓸 수 있도록 분리해 줍니다.
+function AppContent() {
+  const navigate = useNavigate();
+
+  // 모든 Hook은 컴포넌트 안쪽 최상단에 위치해야 합니다!
+  const { isLoggedIn, logout } = useAuthStore();
   const { isDark, toggleDark } = useThemeStore();
 
   const appBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
@@ -77,71 +90,101 @@ export default function App() {
     : "rounded-lg px-3 py-2 text-teal-700 transition-all duration-200 hover:bg-teal-700/10";
 
   return (
-    <BrowserRouter>
-      <div className={`m-0 min-h-screen pt-[50px] ${appBgClass}`}>
-        {/* 네비게이션 */}
-        <nav
-          className={`fixed left-0 top-0 z-[1000] w-full ${navBgClass} border-b border-teal-700/20`}
-        >
-          <div className="flex items-center justify-between px-6 py-0">
-            {/* 왼쪽 - 로고 or 서비스명 */}
-            <Link to="/" className="text-teal-700 font-bold text-lg py-4">
-              식품 안전 분석
-            </Link>
+    <div className={`m-0 min-h-screen pt-[50px] ${appBgClass}`}>
+      {/* 네비게이션 */}
+      <nav
+        className={`fixed left-0 top-0 z-[1000] w-full ${navBgClass} border-b border-teal-700/20`}
+      >
+        <div className="flex items-center justify-between px-6 py-0">
+          {/* 왼쪽 - 로고 */}
+          <Link to="/" className="text-teal-700 font-bold text-lg py-4">
+            식품 안전 분석
+          </Link>
 
-            {/* 가운데 - 메뉴 */}
-            <ul className="flex list-none m-0 p-0">
-              {navItems.map((item) => (
-                <li key={item.path}>
-                  <Link
-                    className={`block px-5 py-[15px] ${navTextClass} no-underline transition-colors hover:bg-cyan-500/15 ${navHoverTextClass}`}
-                    to={item.path}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {/* 가운데 - 메뉴 */}
+          <ul className="flex list-none m-0 p-0">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  className={`block px-5 py-[15px] ${navTextClass} no-underline transition-colors hover:bg-cyan-500/15 ${navHoverTextClass}`}
+                  to={item.path}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
 
-            {/* 오른쪽 - 토글 / 로그인 / 회원가입 */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleDark}
-                className={toggleBtnClass}
-                aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
-                title={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
-              >
-                {isDark ? <MoonIcon /> : <SunIcon />}
-              </button>
+          {/* 오른쪽 - 토글 / 로그인 처리 분기 조절 */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleDark}
+              className={toggleBtnClass}
+              aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
+              title={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
+            >
+              {isDark ? <MoonIcon /> : <SunIcon />}
+            </button>
 
-              <Link to="/login">
-                <button type="button" className={loginBtnClass}>
-                  로그인
+            {/* 바깥에 떠돌던 삼항 연산자 UI 로직이 여기에 알맞게 정착했습니다 */}
+            {isLoggedIn ? (
+              <div className="flex items-center gap-2">
+                <Link to="/mypage">
+                  <button type="button" className={loginBtnClass}>
+                    마이페이지
+                  </button>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    navigate("/");
+                  }}
+                  className="rounded-lg bg-red-400 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-500"
+                >
+                  로그아웃
                 </button>
-              </Link>
-
-              <Link to="/signup">
-                <button type="button" className={signupBtnClass}>
-                  회원가입
-                </button>
-              </Link>
-            </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login">
+                  <button type="button" className={loginBtnClass}>
+                    로그인
+                  </button>
+                </Link>
+                <Link to="/signup">
+                  <button type="button" className={signupBtnClass}>
+                    회원가입
+                  </button>
+                </Link>
+              </div>
+            )}
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        {/* 라우팅 */}
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/analyze" element={<AnalyzePage />} />
-          <Route path="/result" element={<ResultPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/ai-chat" element={<AiChatPage />} />
-        </Routes>
-      </div>
+      {/* 라우팅 */}
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/analyze" element={<AnalyzePage />} />
+        <Route path="/result" element={<ResultPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/ai-chat" element={<AiChatPage />} />
+        <Route path="/mypage" element={<MyPage />} />
+      </Routes>
+    </div>
+  );
+}
+
+// BrowserRouter 내부에서 useNavigate가 작동해야 하므로 App 컴포넌트가 감싸줍니다.
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }
