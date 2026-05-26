@@ -26,13 +26,6 @@ CREATE TABLE analysis_records (
     user_id INT REFERENCES users(user_id) ON DELETE SET NULL, -- 분석을 요청한 사용자 ID
     risk_level VARCHAR(20) NOT NULL CHECK (risk_level IN ('SAFE', 'CAUTION', 'UNSAFE')), -- 분석 위험도
     result_message TEXT NOT NULL,                       -- 사용자에게 보여줄 분석 결과 메시지
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP -- 분석 생성일
-);
-
-CREATE TABLE detected_allergens (
-    detected_id SERIAL PRIMARY KEY,                     -- 탐지된 알레르기 성분 고유 ID
-    analysis_id INT NOT NULL REFERENCES analysis_records(analysis_id) ON DELETE CASCADE, -- 연결된 분석 기록 ID
-    allergy_id INT REFERENCES allergies(allergy_id) ON DELETE SET NULL, -- 탐지된 알레르기 ID
-    detected_ingredient VARCHAR(100) NOT NULL,          -- 실제 분석에서 탐지된 성분명
-    risk_type VARCHAR(20) NOT NULL CHECK (risk_type IN ('MATCH', 'SIMILAR', 'CAUTION')) -- 탐지 유형
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 분석 생성일
+    detected_ingredient VARCHAR(100) NOT NULL          -- 실제 분석에서 탐지된 성분명
 );
