@@ -65,15 +65,15 @@ export default function App() {
     : "hover:text-[#0f172a]";
 
   const loginBtnClass = isDark
-    ? "rounded-lg border border-teal-400 px-4 py-2 text-sm font-semibold text-teal-400 transition-all duration-200 hover:bg-teal-400 hover:text-gray-900"
+    ? "rounded-lg border border-cyan-400 px-4 py-2 text-sm font-semibold text-cyan-400 transition-all duration-200 hover:bg-cyan-400 hover:text-gray-900"
     : "rounded-lg border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 transition-all duration-200 hover:bg-teal-700 hover:text-white";
 
   const signupBtnClass = isDark
-    ? "rounded-lg bg-teal-400 px-4 py-2 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-teal-500"
+    ? "rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-cyan-500"
     : "rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-teal-800";
 
   const toggleBtnClass = isDark
-    ? "rounded-lg px-3 py-2 text-teal-400 transition-all duration-200 hover:bg-teal-400/10"
+    ? "rounded-lg px-3 py-2 text-cyan-400 transition-all duration-200 hover:bg-cyan-400/10"
     : "rounded-lg px-3 py-2 text-teal-700 transition-all duration-200 hover:bg-teal-700/10";
 
   return (
