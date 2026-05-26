@@ -6,6 +6,7 @@ import ContactPage from "./pages/ContactPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import AiChatPage from "./pages/AiChatPage";
+import ResultPage from "./pages/ResultPage.jsx";
 
 const navItems = [
   { label: "홈", path: "/" },
@@ -61,6 +62,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/analyze" element={<AnalyzePage />} />
+          <Route path="/result" element={<ResultPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />

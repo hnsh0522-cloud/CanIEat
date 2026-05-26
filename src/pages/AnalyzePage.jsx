@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const initialForm = {
   foodName: "",
@@ -18,6 +18,7 @@ const buttonClassName =
 export default function AnalyzePage() {
   const [form, setForm] = useState(initialForm);
   const [autoFillMode, setAutoFillMode] = useState(0);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,7 +52,7 @@ export default function AnalyzePage() {
       alert("식품명은 필수 입력 항목입니다.");
       return;
     }
-    alert("분석 기능은 준비 중입니다.");
+    navigate("/result");
   };
 
   return (
@@ -137,6 +138,20 @@ export default function AnalyzePage() {
                 value={form.expiryDate}
                 onChange={handleChange}
                 placeholder="소비기한을 입력해주세요"
+                className={inputClassName}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-300">
+                알레르기 정보 (비회원일 경우에만)
+              </label>
+              <input
+                type="text"
+                name="expiryDate"
+                value={form.expiryDate}
+                onChange={handleChange}
+                placeholder="알레르기를 입력해주세요 (회원이라면 자동입력)"
                 className={inputClassName}
               />
             </div>
