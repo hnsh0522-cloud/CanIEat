@@ -13,7 +13,7 @@ CREATE TABLE allergies (
 );
 
 CREATE TABLE user_allergies (
-    user_allergy_id SERIAL PRIMARY KEY,                 -- 사용자 알레르기 고유 ID, 자동 증가
+    user_allergy_id SERIAL PRIMARY KEY, -- 사용자 알레르기 고유 ID, 자동 증가
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE, -- 사용자 ID, users 테이블 참조
                                                             
     allergy_id INT NOT NULL REFERENCES allergies(allergy_id) ON DELETE CASCADE,  -- 알레르기 ID, allergies 테이블 참조
@@ -25,7 +25,7 @@ CREATE TABLE user_allergies (
 );
 
 CREATE TABLE analysis_records (
-    analysis_id SERIAL PRIMARY KEY,                     -- 분석 기록 고유 ID, 자동 증가
+    analysis_id SERIAL PRIMARY KEY,   -- 분석 기록 고유 ID, 자동 증가
     user_id INT REFERENCES users(user_id) ON DELETE SET NULL,  -- 분석을 요청한 사용자 ID, users 테이블 참조
                                                            
     risk_level VARCHAR(20) NOT NULL CHECK (risk_level IN ('SAFE', 'CAUTION', 'UNSAFE')),  -- 분석 결과 전체 위험도: SAFE / CAUTION / UNSAFE
