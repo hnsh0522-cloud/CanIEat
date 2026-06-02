@@ -1,3 +1,38 @@
+-- 회원가입
+CREATE OR REPLACE PROCEDURE register_user(
+    p_email VARCHAR,
+    p_password_hash TEXT,
+    p_nickname VARCHAR,
+    INOUT p_user_id INT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM users
+        WHERE email = p_email
+    ) THEN
+        RAISE EXCEPTION '이미 사용 중인 이메일입니다: %', p_email;
+    END IF;
+
+    INSERT INTO users (
+        email,
+        password_hash,
+        nickname
+    )
+    VALUES (
+        p_email,
+        p_password_hash,
+        p_nickname
+    )
+    RETURNING user_id INTO p_user_id;
+END;
+$$;
+
+
+
+
 -- 사용자 알레르기 등록
 CREATE OR REPLACE PROCEDURE add_user_allergy(
     p_user_id INT,
