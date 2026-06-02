@@ -1,27 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
-
-const dummyProducts = [
-  {
-    id: 1,
-    productName: "초코바",
-    manufacturer: "롯데제과",
-    allergies: ["땅콩", "밀", "우유"],
-    rawMaterial: "밀가루, 설탕, 땅콩, 우유, 카카오",
-    isDanger: true,
-    dangerItems: ["땅콩"],
-  },
-  {
-    id: 2,
-    productName: "그릭요거트",
-    manufacturer: "남양유업",
-    allergies: ["우유"],
-    rawMaterial: "탈지분유, 유산균",
-    isDanger: true,
-    dangerItems: ["우유"],
-  },
-];
+import useAnalysisStore from "../store/useAnalysisStore.js";
 
 function DangerPill({ isDanger }) {
   if (isDanger) {
@@ -42,9 +22,15 @@ function DangerPill({ isDanger }) {
 }
 
 export default function ResultPage() {
-  const product = dummyProducts[0];
+  const { lastResult } = useAnalysisStore();
   const { isDark } = useThemeStore();
   const accent = useAccentClasses();
+
+  if (!lastResult) {
+    return <Navigate to="/analyze" replace />;
+  }
+
+  const product = lastResult;
 
   const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
   const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
@@ -57,7 +43,7 @@ export default function ResultPage() {
 
   return (
     <div
-      className={`m-0 box-border min-h-screen pt-[50px] ${pageBgClass} ${pageTextClass}`}
+      className={`m-0 box-border min-h-screen pt-14 md:pt-[50px] ${pageBgClass} ${pageTextClass}`}
     >
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
         <div className="mb-8 text-center">
@@ -87,6 +73,11 @@ export default function ResultPage() {
                   {product.manufacturer}
                 </span>
               </p>
+              {product.productNumber && (
+                <p className={`mt-1 text-sm ${mutedTextClass}`}>
+                  품목번호: {product.productNumber}
+                </p>
+              )}
             </div>
             <div className="shrink-0">
               <DangerPill isDanger={product.isDanger} />
@@ -112,16 +103,40 @@ export default function ResultPage() {
                 포함된 알레르기 성분
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {product.allergies.map((a) => (
-                  <span
-                    key={a}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${accent.badgeAccent}`}
-                  >
-                    {a}
-                  </span>
-                ))}
+                {product.allergies.length > 0 ? (
+                  product.allergies.map((a) => (
+                    <span
+                      key={a}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${accent.badgeAccent}`}
+                    >
+                      {a}
+                    </span>
+                  ))
+                ) : (
+                  <p className={`text-sm ${mutedTextClass}`}>
+                    성분에서 알려진 알레르기 유발 성분이 감지되지 않았습니다
+                  </p>
+                )}
               </div>
             </div>
+
+            {product.userAllergies.length > 0 && (
+              <div>
+                <p className={`text-sm font-semibold ${accent.textAccent}`}>
+                  내 알레르기 기준
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {product.userAllergies.map((a) => (
+                    <span
+                      key={a}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${accent.badgeAccent}`}
+                    >
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <p className="text-sm font-semibold text-orange-400">
@@ -139,7 +154,7 @@ export default function ResultPage() {
                   ))
                 ) : (
                   <p className={`text-sm ${mutedTextClass}`}>
-                    주의 성분이 없습니다
+                    내 알레르기 기준 주의 성분이 없습니다
                   </p>
                 )}
               </div>

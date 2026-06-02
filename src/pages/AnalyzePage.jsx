@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
+import useAuthStore from "../store/useAuthStore.js";
+import useAnalysisStore from "../store/useAnalysisStore.js";
 
 const initialForm = {
   foodName: "",
@@ -9,6 +11,7 @@ const initialForm = {
   productNumber: "",
   ingredients: "",
   expiryDate: "",
+  allergies: "",
 };
 
 export default function AnalyzePage() {
@@ -16,6 +19,8 @@ export default function AnalyzePage() {
   const [autoFillMode, setAutoFillMode] = useState(0);
   const navigate = useNavigate();
   const { isDark } = useThemeStore();
+  const { isLoggedIn, user } = useAuthStore();
+  const { setAnalysis } = useAnalysisStore();
   const accent = useAccentClasses();
 
   const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
@@ -61,6 +66,8 @@ export default function AnalyzePage() {
       alert("식품명은 필수 입력 항목입니다.");
       return;
     }
+    const userAllergies = isLoggedIn ? user.allergies : [];
+    setAnalysis(form, userAllergies);
     navigate("/result");
   };
 
@@ -171,16 +178,25 @@ export default function AnalyzePage() {
               <label
                 className={`mb-1 block text-sm font-medium ${labelTextClass}`}
               >
-                알레르기 정보 (비회원일 경우에만)
+                알레르기 정보{" "}
+                {isLoggedIn ? "(회원 정보 자동 적용)" : "(비회원일 경우 입력)"}
               </label>
-              <input
-                type="text"
-                name="expiryDate"
-                value={form.expiryDate}
-                onChange={handleChange}
-                placeholder="알레르기를 입력해주세요 (회원이라면 자동입력)"
-                className={inputClassName}
-              />
+              {isLoggedIn ? (
+                <p className={`rounded-lg border px-4 py-3 text-sm ${isDark ? "border-slate-600 bg-[#0f172a] text-slate-300" : "border-slate-300 bg-slate-50 text-slate-700"}`}>
+                  {user.allergies.length > 0
+                    ? user.allergies.join(", ")
+                    : "설정된 알레르기가 없습니다. 마이페이지에서 설정해주세요."}
+                </p>
+              ) : (
+                <input
+                  type="text"
+                  name="allergies"
+                  value={form.allergies}
+                  onChange={handleChange}
+                  placeholder="알레르기를 쉼표로 구분해 입력해주세요 (예: 땅콩, 우유)"
+                  className={inputClassName}
+                />
+              )}
             </div>
 
             <div className="mt-2 flex flex-col gap-3">
