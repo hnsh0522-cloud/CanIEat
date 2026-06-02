@@ -1,9 +1,11 @@
+import { useState } from "react";
 import {
   Link,
   BrowserRouter,
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import HomePage from "./pages/HomePage.jsx";
 import AnalyzePage from "./pages/AnalyzePage.jsx";
@@ -62,11 +64,47 @@ function MoonIcon({ className = "h-5 w-5" }) {
   );
 }
 
-// 네비게이션과 라우터를 정상 구동하기 위해 내부에서 useNavigate를 쓸 수 있도록 분리해 줍니다.
+function MenuIcon({ className = "h-6 w-6" }) {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className = "h-6 w-6" }) {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 function AppContent() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 모든 Hook은 컴포넌트 안쪽 최상단에 위치해야 합니다!
   const { isLoggedIn, logout } = useAuthStore();
   const { isDark, toggleDark } = useThemeStore();
 
@@ -89,20 +127,31 @@ function AppContent() {
     ? "rounded-lg px-3 py-2 text-cyan-400 transition-all duration-200 hover:bg-cyan-400/10"
     : "rounded-lg px-3 py-2 text-teal-700 transition-all duration-200 hover:bg-teal-700/10";
 
+  const mobileLinkClass = `block rounded-lg px-4 py-3 text-base ${navTextClass} no-underline transition-colors hover:bg-cyan-500/15 ${navHoverTextClass}`;
+
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const handleLogout = () => {
+    logout();
+    closeMobileMenu();
+    navigate("/");
+  };
+
   return (
-    <div className={`m-0 min-h-screen pt-[50px] ${appBgClass}`}>
-      {/* 네비게이션 */}
+    <div className={`m-0 min-h-screen pt-14 md:pt-[50px] ${appBgClass}`}>
       <nav
         className={`fixed left-0 top-0 z-[1000] w-full ${navBgClass} border-b border-teal-700/20`}
       >
-        <div className="flex items-center justify-between px-6 py-0">
-          {/* 왼쪽 - 로고 */}
-          <Link to="/" className="text-teal-700 font-bold text-lg py-4">
+        <div className="flex items-center justify-between px-4 py-0 md:px-6">
+          <Link
+            to="/"
+            className="text-teal-700 font-bold text-base py-3 md:text-lg md:py-4"
+            onClick={closeMobileMenu}
+          >
             식품 안전 분석
           </Link>
 
-          {/* 가운데 - 메뉴 */}
-          <ul className="flex list-none m-0 p-0">
+          <ul className="hidden list-none m-0 p-0 md:flex">
             {navItems.map((item) => (
               <li key={item.path}>
                 <Link
@@ -115,8 +164,7 @@ function AppContent() {
             ))}
           </ul>
 
-          {/* 오른쪽 - 토글 / 로그인 처리 분기 조절 */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <button
               type="button"
               onClick={toggleDark}
@@ -127,44 +175,107 @@ function AppContent() {
               {isDark ? <MoonIcon /> : <SunIcon />}
             </button>
 
-            {/* 바깥에 떠돌던 삼항 연산자 UI 로직이 여기에 알맞게 정착했습니다 */}
-            {isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <Link to="/mypage">
-                  <button type="button" className={loginBtnClass}>
-                    마이페이지
+            <div className="hidden items-center gap-2 md:flex">
+              {isLoggedIn ? (
+                <>
+                  <Link to="/mypage">
+                    <button type="button" className={loginBtnClass}>
+                      마이페이지
+                    </button>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-lg bg-red-400 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-500"
+                  >
+                    로그아웃
                   </button>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    navigate("/");
-                  }}
-                  className="rounded-lg bg-red-400 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-500"
-                >
-                  로그아웃
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link to="/login">
-                  <button type="button" className={loginBtnClass}>
-                    로그인
-                  </button>
-                </Link>
-                <Link to="/signup">
-                  <button type="button" className={signupBtnClass}>
-                    회원가입
-                  </button>
-                </Link>
-              </div>
-            )}
+                </>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <button type="button" className={loginBtnClass}>
+                      로그인
+                    </button>
+                  </Link>
+                  <Link to="/signup">
+                    <button type="button" className={signupBtnClass}>
+                      회원가입
+                    </button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className={`rounded-lg p-2 md:hidden ${navTextClass} ${toggleBtnClass}`}
+              aria-label={isMobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
           </div>
         </div>
+
+        {isMobileMenuOpen && (
+          <div
+            className={`border-t border-teal-700/20 px-4 py-3 md:hidden ${navBgClass}`}
+          >
+            <ul className="m-0 list-none space-y-1 p-0">
+              {navItems.map((item) => (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={`${mobileLinkClass} ${
+                      location.pathname === item.path
+                        ? "bg-cyan-500/15 font-semibold"
+                        : ""
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-3 flex flex-col gap-2 border-t border-teal-700/20 pt-3">
+              {isLoggedIn ? (
+                <>
+                  <Link to="/mypage" onClick={closeMobileMenu}>
+                    <button type="button" className={`w-full ${loginBtnClass}`}>
+                      마이페이지
+                    </button>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full rounded-lg bg-red-400 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-500"
+                  >
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={closeMobileMenu}>
+                    <button type="button" className={`w-full ${loginBtnClass}`}>
+                      로그인
+                    </button>
+                  </Link>
+                  <Link to="/signup" onClick={closeMobileMenu}>
+                    <button type="button" className={`w-full ${signupBtnClass}`}>
+                      회원가입
+                    </button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
-      {/* 라우팅 */}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/analyze" element={<AnalyzePage />} />
@@ -180,7 +291,6 @@ function AppContent() {
   );
 }
 
-// BrowserRouter 내부에서 useNavigate가 작동해야 하므로 App 컴포넌트가 감싸줍니다.
 export default function App() {
   return (
     <BrowserRouter>

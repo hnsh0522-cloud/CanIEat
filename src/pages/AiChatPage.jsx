@@ -137,11 +137,62 @@ function UserIcon({ className = "h-5 w-5" }) {
   );
 }
 
+async function askGemini(question) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("API_KEY_MISSING");
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `당신은 식품 성분 및 알레르기 전문 AI 어시스턴트입니다.
+
+규칙:
+1. 반드시 한국어로만 답변
+2. 마크다운 문법 사용 금지 (**, ##, -, * 등 사용 금지)
+3. 일반 텍스트로만 작성
+4. 문단 구분은 줄바꿈으로만 표현
+5. 일반인이 이해하기 쉬운 언어로 설명
+6. 답변은 간결하게 핵심만 전달
+7. 유저가 식품이나 알레르기가 아닌 정보를 물어볼 경우에는 '식품 성분 질문이 아닙니다.'라고 답변해주세요.
+
+사용자 질문: ${question}`,
+              },
+            ],
+          },
+        ],
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("API_ERROR");
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error("EMPTY_RESPONSE");
+  }
+
+  return text;
+}
+
 export default function AiChatPage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState(0);
   const { isDark } = useThemeStore();
   const accent = useAccentClasses();
@@ -177,65 +228,35 @@ export default function AiChatPage() {
   const menuItemClass = `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${sidebarTextClass} ${sidebarHoverClass}`;
 
   const handleSubmit = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage = { role: "user", content: input };
+    const question = input.trim();
+    const userMessage = { role: "user", content: question };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `당신은 식품 성분 및 알레르기 전문 AI 어시스턴트입니다.
-
-                    규칙:
-                    1. 반드시 한국어로만 답변
-                    2. 마크다운 문법 사용 금지 (**, ##, -, * 등 사용 금지)
-                    3. 일반 텍스트로만 작성
-                    4. 문단 구분은 줄바꿈으로만 표현
-                    5. 일반인이 이해하기 쉬운 언어로 설명
-                    6. 답변은 간결하게 핵심만 전달
-                    7. 유저가 식품이나 알레르기가 아닌 정보를 물어볼 경우에는 '식품 성분 질문이 아닙니다.'라고 답변해주세요.
-                    
-                    
-                    사용자 질문: ${input}`,
-                  },
-                ],
-              },
-            ],
-          }),
-        },
-      );
-
-      const data = await response.json();
-      const aiMessage = data.candidates[0].content.parts[0].text;
-
+      const aiMessage = await askGemini(question);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: aiMessage },
       ]);
     } catch (error) {
+      const errorMessage =
+        error.message === "API_KEY_MISSING"
+          ? "API 키가 설정되지 않았습니다. .env 파일에 VITE_GEMINI_API_KEY를 추가해주세요."
+          : "AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: "AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-        },
+        { role: "assistant", content: errorMessage },
       ]);
     } finally {
       setIsLoading(false);
     }
-    console.log("API KEY:", import.meta.env.VITE_GEMINI_API_KEY);
   };
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -244,24 +265,32 @@ export default function AiChatPage() {
   };
 
   const handleNewConversation = () => {
+    setMessages([]);
     setActiveConversationId(null);
   };
 
   return (
     <div
-      className={`m-0 box-border flex min-h-screen flex-col pt-[50px] ${pageBgClass} ${pageTextClass}`}
+      className={`m-0 box-border flex min-h-[calc(100dvh-3.5rem)] flex-col md:min-h-[calc(100vh-50px)] md:pt-[50px] pt-14 ${pageBgClass} ${pageTextClass}`}
     >
-      <div className="flex min-h-0 flex-1">
-        {/* 사이드바 */}
+      <div className="relative flex min-h-0 flex-1">
+        {isSidebarOpen && (
+          <button
+            type="button"
+            className="absolute inset-0 z-10 bg-black/40 md:hidden"
+            aria-label="사이드바 닫기"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         <div
-          className={`relative shrink-0 overflow-hidden transition-all duration-300 ${
+          className={`absolute z-20 h-full shrink-0 overflow-hidden transition-all duration-300 md:relative md:z-auto ${
             isSidebarOpen ? "w-[260px]" : "w-0"
           }`}
         >
           <aside
             className={`flex h-full w-[260px] flex-col border-r ${accent.borderAccent20} ${sidebarBgClass} ${sidebarTextClass}`}
           >
-            {/* 1. 상단 헤더 */}
             <div className="flex items-center justify-between px-4 py-4">
               <span className="text-sm font-bold">식품 안전 분석</span>
               <button
@@ -274,7 +303,6 @@ export default function AiChatPage() {
               </button>
             </div>
 
-            {/* 2. 메뉴 항목 */}
             <div className="space-y-0.5 px-2 pb-2">
               <button
                 type="button"
@@ -300,10 +328,8 @@ export default function AiChatPage() {
               </button>
             </div>
 
-            {/* 3. 구분선 */}
             <div className={`mx-3 border-t ${sidebarDividerClass}`} />
 
-            {/* 4. 최근 대화 목록 */}
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-3">
               <p
                 className={`mb-2 px-2 text-xs font-medium ${sidebarMutedClass}`}
@@ -341,7 +367,6 @@ export default function AiChatPage() {
               </ul>
             </div>
 
-            {/* 5. 하단 고정 영역 */}
             <div className={`border-t px-3 py-3 ${sidebarDividerClass}`}>
               <Link
                 to="/login"
@@ -360,9 +385,8 @@ export default function AiChatPage() {
           </aside>
         </div>
 
-        {/* 채팅 영역 */}
         <div className="relative flex min-w-0 flex-1 flex-col">
-          <div className={`border-b ${accent.borderAccent20} px-6 py-4`}>
+          <div className={`border-b ${accent.borderAccent20} px-4 py-4 md:px-6`}>
             <div className="flex items-start gap-3">
               <button
                 type="button"
@@ -374,7 +398,7 @@ export default function AiChatPage() {
                 <PanelToggleIcon />
               </button>
               <div className="min-w-0 flex-1">
-                <h1 className={`text-xl font-bold ${headingTextClass}`}>
+                <h1 className={`text-lg font-bold md:text-xl ${headingTextClass}`}>
                   AI 식품 성분 질문
                 </h1>
                 <p className={`mt-1 text-sm ${mutedTextClass}`}>
@@ -384,7 +408,7 @@ export default function AiChatPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 md:px-6">
             {messages.length === 0 && (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -416,7 +440,7 @@ export default function AiChatPage() {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 text-sm ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm md:max-w-[70%] ${
                     msg.role === "user"
                       ? accent.userBubble
                       : assistantBubbleClass
@@ -438,7 +462,7 @@ export default function AiChatPage() {
             )}
           </div>
 
-          <div className={`border-t ${accent.borderAccent20} px-6 py-4`}>
+          <div className={`border-t ${accent.borderAccent20} px-4 py-4 md:px-6`}>
             <div className="flex items-end gap-3">
               <textarea
                 value={input}
@@ -451,7 +475,7 @@ export default function AiChatPage() {
               <button
                 onClick={handleSubmit}
                 disabled={!input.trim() || isLoading}
-                className={`rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${accent.btnOutline}`}
+                className={`shrink-0 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 md:px-5 ${accent.btnOutline}`}
               >
                 전송
               </button>
