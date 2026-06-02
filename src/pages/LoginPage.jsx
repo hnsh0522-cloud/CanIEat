@@ -1,16 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
-// ❌ 기존의 useDarkStore 대신 다른 컴포넌트들과 동일한 useThemeStore를 바라보도록 수정합니다.
-import useThemeStore from "../store/useThemeStore.js";
+import useThemeStore from "../store/useThemeStore";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
-
-  // 1. 올바른 테마 스토어 구독
   const { isDark } = useThemeStore();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 

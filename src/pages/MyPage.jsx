@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
-import useDarkStore from "../store/useDarkStore";
+import useThemeStore from "../store/useThemeStore";
 
 const allergyCategories = [
   {
@@ -19,7 +19,7 @@ const allergyCategories = [
 export default function MyPage() {
   const navigate = useNavigate();
   const { user, logout, updateAllergies } = useAuthStore();
-  const { isDark } = useDarkStore();
+  const { isDark } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedAllergies, setSelectedAllergies] = useState(user.allergies);
 
