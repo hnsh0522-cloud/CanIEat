@@ -178,23 +178,64 @@ export default function AiChatPage() {
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
+
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `당신은 식품 성분 및 알레르기 전문 AI 어시스턴트입니다.
+
+                    규칙:
+                    1. 반드시 한국어로만 답변
+                    2. 마크다운 문법 사용 금지 (**, ##, -, * 등 사용 금지)
+                    3. 일반 텍스트로만 작성
+                    4. 문단 구분은 줄바꿈으로만 표현
+                    5. 일반인이 이해하기 쉬운 언어로 설명
+                    6. 답변은 간결하게 핵심만 전달
+                    7. 유저가 식품이나 알레르기가 아닌 정보를 물어볼 경우에는 '식품 성분 질문이 아닙니다.'라고 답변해주세요.
+                    
+                    
+                    사용자 질문: ${input}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      );
+
+      const data = await response.json();
+      const aiMessage = data.candidates[0].content.parts[0].text;
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: aiMessage },
+      ]);
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "현재 AI 연동 준비 중입니다. 백엔드 연동 후 실제 답변이 제공됩니다.",
+          content: "AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
         },
       ]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+    console.log("API KEY:", import.meta.env.VITE_GEMINI_API_KEY);
   };
-
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
