@@ -171,11 +171,11 @@ export default function SignupPage() {
               <label
                 className={`mb-1 block text-sm font-medium ${labelTextClass}`}
               >
-                이메일
+                알레르기 세부 사항
               </label>
               <input
                 type="email"
-                placeholder="example@email.com"
+                placeholder="알레르기 세부 사항을 적어주세요."
                 className={inputClassName}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
