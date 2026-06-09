@@ -4,6 +4,7 @@ import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
 import useAuthStore from "../store/useAuthStore.js";
 import useAnalysisStore from "../store/useAnalysisStore.js";
+import { getFoodDetail } from "../api/food";
 
 const initialForm = {
   foodName: "",
@@ -69,6 +70,18 @@ export default function AnalyzePage() {
     const userAllergies = isLoggedIn ? user.allergies : [];
     setAnalysis(form, userAllergies);
     navigate("/result");
+  };
+
+  const handleAnalyze = async () => {
+    try {
+      const data = await getFoodDetail({
+        report_number: reportNumber, // 품목보고번호
+      });
+      // 결과 페이지로 이동하면서 데이터 전달
+      navigate("/result", { state: { foodData: data } });
+    } catch (error) {
+      alert("식품 정보를 가져오지 못했습니다.");
+    }
   };
 
   return (
@@ -182,7 +195,9 @@ export default function AnalyzePage() {
                 {isLoggedIn ? "(회원 정보 자동 적용)" : "(비회원일 경우 입력)"}
               </label>
               {isLoggedIn ? (
-                <p className={`rounded-lg border px-4 py-3 text-sm ${isDark ? "border-slate-600 bg-[#0f172a] text-slate-300" : "border-slate-300 bg-slate-50 text-slate-700"}`}>
+                <p
+                  className={`rounded-lg border px-4 py-3 text-sm ${isDark ? "border-slate-600 bg-[#0f172a] text-slate-300" : "border-slate-300 bg-slate-50 text-slate-700"}`}
+                >
                   {user.allergies.length > 0
                     ? user.allergies.join(", ")
                     : "설정된 알레르기가 없습니다. 마이페이지에서 설정해주세요."}

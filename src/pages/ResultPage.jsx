@@ -2,6 +2,9 @@ import { Link, Navigate } from "react-router-dom";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
 import useAnalysisStore from "../store/useAnalysisStore.js";
+import { canIEat } from "../api/food";
+import { useLocation } from "react-router-dom";
+import useAuthStore from "../store/useAuthStore";
 
 function DangerPill({ isDanger }) {
   if (isDanger) {
@@ -26,6 +29,10 @@ export default function ResultPage() {
   const { isDark } = useThemeStore();
   const accent = useAccentClasses();
 
+  const { state } = useLocation();
+  const { foodData } = state;
+  const { user } = useAuthStore();
+
   if (!lastResult) {
     return <Navigate to="/analyze" replace />;
   }
@@ -40,6 +47,17 @@ export default function ResultPage() {
   const surfaceBgClass = isDark ? "bg-slate-950/20" : "bg-slate-100/60";
   const internalTextClass = isDark ? "text-slate-200" : "text-[#1e293b]";
   const manufacturerTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
+
+  const handleAiAnalyze = async () => {
+    const result = await canIEat({
+      food_name: foodData.food_name,
+      expiration_date: foodData.expiration_date,
+      ingredients: foodData.ingredients,
+      allergy: user.allergies, // Zustand에서 가져온 유저 알레르기
+    });
+    // result.risk_level → safe / caution / unsafe
+    // result.result_message → 판단 이유 메시지
+  };
 
   return (
     <div
