@@ -1,17 +1,17 @@
+import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { canIEat } from "../api/food";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
 import useAnalysisStore from "../store/useAnalysisStore.js";
-
-// TODO: API 연동 시 아래 객체에 응답값을 넣으면 됩니다.
-const analysisResult = {
-  risk_level: "", // "safe" | "caution" | "unsafe"
-  detected_ingredients: "", // "없음" 또는 알레르기 성분
-  risk_type: "", // "match" | "unmatch"
-  result_message: "", // 판단 이유를 포함한 사용자 안내 메시지
-};
-
 function RiskPill({ riskLevel }) {
+  if (!riskLevel) {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-slate-400/80 bg-slate-400/10 px-3 py-1 text-sm font-semibold text-slate-400">
+        분석 중...
+      </div>
+    );
+  }
   if (riskLevel === "unsafe") {
     return (
       <div className="inline-flex items-center gap-2 rounded-full border border-red-400/80 bg-red-400/10 px-3 py-1 text-sm font-semibold text-red-400">
@@ -47,6 +47,13 @@ function RiskPill({ riskLevel }) {
 }
 
 function RiskTypeBadge({ riskType }) {
+  if (!riskType) {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-slate-400/60 bg-slate-400/10 px-3 py-1 text-xs font-semibold text-slate-400">
+        분석 중...
+      </div>
+    );
+  }
   if (riskType === "match") {
     return (
       <div className="inline-flex items-center gap-2 rounded-full border border-red-400/60 bg-red-400/10 px-3 py-1 text-xs font-semibold text-red-400">
@@ -70,12 +77,23 @@ function RiskTypeBadge({ riskType }) {
   );
 }
 
-function ResultField({ label, value, accent, mutedTextClass, internalTextClass }) {
+function ResultField({
+  label,
+  value,
+  isLoading,
+  accent,
+  mutedTextClass,
+  internalTextClass,
+}) {
   return (
     <div>
       <p className={`text-sm font-semibold ${accent.textAccent}`}>{label}</p>
       <p className={`mt-2 text-sm leading-relaxed whitespace-pre-line ${internalTextClass}`}>
-        {value || <span className={mutedTextClass}>-</span>}
+        {isLoading ? (
+          <span className={mutedTextClass}>불러오는 중...</span>
+        ) : (
+          value || <span className={mutedTextClass}>-</span>
+        )}
       </p>
     </div>
   );
@@ -85,13 +103,49 @@ export default function ResultPage() {
   const { lastResult } = useAnalysisStore();
   const { isDark } = useThemeStore();
   const accent = useAccentClasses();
-
+  const [analysis, setAnalysis] = useState({
+    risk_level: "",
+    detected_ingredients: "",
+    risk_type: "",
+    result_message: "",
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!lastResult) return;
+    const fetchAnalysis = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const result = await canIEat({
+          food_name: lastResult.productName,
+          expiration_date: lastResult.expiryDate ?? "",
+          ingredients: lastResult.rawMaterial
+            ? lastResult.rawMaterial.split(/[,，、]/).map((s) => s.trim()).filter(Boolean)
+            : [],
+          allergies: lastResult.userAllergies ?? [],  // allergy → allergies 일 수도 있음
+        });
+        const data = result.data ?? result;
+        setAnalysis({
+          risk_level: data.risk_level ?? "",
+          detected_ingredients: data.detected_ingredients ?? "",
+          risk_type: data.risk_type ?? "",
+          result_message: data.result_message ?? "",
+        });
+      } catch (err) {
+        console.error("canIEat API error:", err);
+        setError("분석 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAnalysis();
+  }, [lastResult]);
   if (!lastResult) {
     return <Navigate to="/analyze" replace />;
   }
-
   const { risk_level, detected_ingredients, risk_type, result_message } =
-    analysisResult;
+    analysis;
 
   const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
   const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
@@ -141,17 +195,20 @@ export default function ResultPage() {
               )}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
-              <RiskPill riskLevel={risk_level} />
-              <RiskTypeBadge riskType={risk_type} />
+              <RiskPill riskLevel={isLoading ? null : risk_level} />
+              <RiskTypeBadge riskType={isLoading ? null : risk_type} />
             </div>
           </div>
 
           <div
             className={`mt-4 rounded-xl border ${accent.borderAccent10} ${surfaceBgClass} p-4 space-y-4`}
           >
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
             <ResultField
               label="위험 수준 (risk_level)"
               value={risk_level}
+              isLoading={isLoading}
               accent={accent}
               mutedTextClass={mutedTextClass}
               internalTextClass={internalTextClass}
@@ -160,6 +217,7 @@ export default function ResultPage() {
             <ResultField
               label="탐지된 성분 (detected_ingredients)"
               value={detected_ingredients}
+              isLoading={isLoading}
               accent={accent}
               mutedTextClass={mutedTextClass}
               internalTextClass={internalTextClass}
@@ -168,6 +226,7 @@ export default function ResultPage() {
             <ResultField
               label="판정 유형 (risk_type)"
               value={risk_type}
+              isLoading={isLoading}
               accent={accent}
               mutedTextClass={mutedTextClass}
               internalTextClass={internalTextClass}
@@ -176,6 +235,7 @@ export default function ResultPage() {
             <ResultField
               label="안내 메시지 (result_message)"
               value={result_message}
+              isLoading={isLoading}
               accent={accent}
               mutedTextClass={mutedTextClass}
               internalTextClass={internalTextClass}

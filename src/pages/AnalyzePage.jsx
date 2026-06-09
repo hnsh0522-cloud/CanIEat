@@ -4,8 +4,6 @@ import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
 import useAuthStore from "../store/useAuthStore.js";
 import useAnalysisStore from "../store/useAnalysisStore.js";
-import { getFoodDetail } from "../api/food";
-
 const initialForm = {
   foodName: "",
   companyName: "",
@@ -17,7 +15,6 @@ const initialForm = {
 
 export default function AnalyzePage() {
   const [form, setForm] = useState(initialForm);
-  const [autoFillMode, setAutoFillMode] = useState(0);
   const [reportNumber, setReportNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -95,55 +92,30 @@ export default function AnalyzePage() {
     }
   };
 
-  // 🚀 최종 폼 제출 핸들러 (List 변환 적용 공정)
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("버튼 클릭됨");
 
-    // ⭕ 원료 및 성분 문자열을 쉼표 단위로 쪼개서 공백 제거 후 완전한 List(Array)로 변환
-    // 예: "정제수, 대두 ,밀" -> ["정제수", "대두", "밀"]
-    const processedIngredients = form.ingredients
-      ? form.ingredients
+    if (!form.foodName.trim()) {
+      alert("식품명은 필수 입력 항목입니다.");
+      return;
+    }
+
+    const guestAllergies = form.allergies
+      ? form.allergies
           .split(/[,，、]/)
           .map((item) => item.trim())
           .filter(Boolean)
       : [];
+    const userAllergies = isLoggedIn ? user.allergies : guestAllergies;
 
-    // 알레르기 정보 처리 (로그인 유저 정보 배열 혹은 비회원 입력 파싱)
-    const processedAllergies = isLoggedIn
-      ? (user.allergies ?? [])
-      : form.allergies
-        ? form.allergies
-            .split(/[,，、]/)
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : [];
-
-    // 백엔드로 전송할 최종 API payload 객체 구조화
-    const requestPayload = {
-      report_number: reportNumber || form.productNumber,
-      food_name: form.foodName,
-      company_name: form.companyName,
-      ingredients: processedIngredients, // ⬅️ 완전한 List 형태로 주입 완료!
-      expiry_date: form.expiryDate,
-      allergies: processedAllergies, // ⬅️ 알레르기 역시 List 형태로 동기화
-    };
-
-    console.log("백엔드로 전송할 데이터:", requestPayload);
-
-    setIsLoading(true);
-    try {
-      // 팩토리나 API 함수 구조 규격에 맞게 맵핑하여 데이터 전달
-      const data = await getFoodDetail(requestPayload);
-      navigate("/result", { state: { foodData: data } });
-    } catch (error) {
-      alert("식품 정보를 가져오지 못했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-
-    const data = await res.json();
-    console.log("백엔드가 보내준 리얼 데이터 구조:", data);
+    setAnalysis(
+      {
+        ...form,
+        productNumber: reportNumber || form.productNumber,
+      },
+      userAllergies,
+    );
+    navigate("/result");
   };
 
   return (
