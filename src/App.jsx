@@ -19,6 +19,8 @@ import useThemeStore from "./store/useThemeStore.js";
 import useAuthStore from "./store/useAuthStore";
 import MyPage from "./pages/MyPage";
 
+console.log(import.meta.env.VITE_API_BASE_URL);
+
 const navItems = [
   { label: "홈", path: "/" },
   { label: "분석하기", path: "/analyze" },
@@ -265,7 +267,10 @@ function AppContent() {
                     </button>
                   </Link>
                   <Link to="/signup" onClick={closeMobileMenu}>
-                    <button type="button" className={`w-full ${signupBtnClass}`}>
+                    <button
+                      type="button"
+                      className={`w-full ${signupBtnClass}`}
+                    >
                       회원가입
                     </button>
                   </Link>
