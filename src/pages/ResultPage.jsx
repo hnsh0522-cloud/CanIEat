@@ -3,20 +3,80 @@ import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
 import useAnalysisStore from "../store/useAnalysisStore.js";
 
-function DangerPill({ isDanger }) {
-  if (isDanger) {
+// TODO: API 연동 시 아래 객체에 응답값을 넣으면 됩니다.
+const analysisResult = {
+  risk_level: "", // "safe" | "caution" | "unsafe"
+  detected_ingredients: "", // "없음" 또는 알레르기 성분
+  risk_type: "", // "match" | "unmatch"
+  result_message: "", // 판단 이유를 포함한 사용자 안내 메시지
+};
+
+function RiskPill({ riskLevel }) {
+  if (riskLevel === "unsafe") {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-red-400/80 bg-red-400/10 px-3 py-1 text-sm font-semibold text-red-400">
+        <span aria-hidden>🚫</span>
+        섭취 불가
+      </div>
+    );
+  }
+
+  if (riskLevel === "caution") {
     return (
       <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/80 bg-orange-400/10 px-3 py-1 text-sm font-semibold text-orange-400">
         <span aria-hidden>⚠️</span>
-        위험 성분이 포함되어 있습니다
+        주의 필요
+      </div>
+    );
+  }
+
+  if (riskLevel === "safe") {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-green-400/80 bg-green-400/10 px-3 py-1 text-sm font-semibold text-green-400">
+        <span aria-hidden>✅</span>
+        안전
       </div>
     );
   }
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-green-400/80 bg-green-400/10 px-3 py-1 text-sm font-semibold text-green-400">
-      <span aria-hidden>✅</span>
-      안전한 제품입니다
+    <div className="inline-flex items-center gap-2 rounded-full border border-slate-400/80 bg-slate-400/10 px-3 py-1 text-sm font-semibold text-slate-400">
+      -
+    </div>
+  );
+}
+
+function RiskTypeBadge({ riskType }) {
+  if (riskType === "match") {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-red-400/60 bg-red-400/10 px-3 py-1 text-xs font-semibold text-red-400">
+        알레르기 성분 일치
+      </div>
+    );
+  }
+
+  if (riskType === "unmatch") {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-green-400/60 bg-green-400/10 px-3 py-1 text-xs font-semibold text-green-400">
+        알레르기 성분 불일치
+      </div>
+    );
+  }
+
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-slate-400/60 bg-slate-400/10 px-3 py-1 text-xs font-semibold text-slate-400">
+      -
+    </div>
+  );
+}
+
+function ResultField({ label, value, accent, mutedTextClass, internalTextClass }) {
+  return (
+    <div>
+      <p className={`text-sm font-semibold ${accent.textAccent}`}>{label}</p>
+      <p className={`mt-2 text-sm leading-relaxed whitespace-pre-line ${internalTextClass}`}>
+        {value || <span className={mutedTextClass}>-</span>}
+      </p>
     </div>
   );
 }
@@ -30,7 +90,8 @@ export default function ResultPage() {
     return <Navigate to="/analyze" replace />;
   }
 
-  const product = lastResult;
+  const { risk_level, detected_ingredients, risk_type, result_message } =
+    analysisResult;
 
   const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
   const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
@@ -55,7 +116,7 @@ export default function ResultPage() {
           <p
             className={`mt-3 text-sm leading-relaxed ${mutedTextClass} md:text-base`}
           >
-            검색하신 제품의 알레르기 정보입니다
+            검색하신 제품의 알레르기 분석 결과입니다
           </p>
         </div>
 
@@ -65,100 +126,71 @@ export default function ResultPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
               <h2 className={`truncate text-xl font-bold ${headingTextClass}`}>
-                {product.productName}
+                {lastResult.productName}
               </h2>
               <p className={`mt-1 text-sm ${mutedTextClass}`}>
                 제조사:{" "}
                 <span className={manufacturerTextClass}>
-                  {product.manufacturer}
+                  {lastResult.manufacturer}
                 </span>
               </p>
-              {product.productNumber && (
+              {lastResult.productNumber && (
                 <p className={`mt-1 text-sm ${mutedTextClass}`}>
-                  품목번호: {product.productNumber}
+                  품목번호: {lastResult.productNumber}
                 </p>
               )}
             </div>
-            <div className="shrink-0">
-              <DangerPill isDanger={product.isDanger} />
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <RiskPill riskLevel={risk_level} />
+              <RiskTypeBadge riskType={risk_type} />
             </div>
+          </div>
+
+          <div
+            className={`mt-4 rounded-xl border ${accent.borderAccent10} ${surfaceBgClass} p-4 space-y-4`}
+          >
+            <ResultField
+              label="위험 수준 (risk_level)"
+              value={risk_level}
+              accent={accent}
+              mutedTextClass={mutedTextClass}
+              internalTextClass={internalTextClass}
+            />
+
+            <ResultField
+              label="탐지된 성분 (detected_ingredients)"
+              value={detected_ingredients}
+              accent={accent}
+              mutedTextClass={mutedTextClass}
+              internalTextClass={internalTextClass}
+            />
+
+            <ResultField
+              label="판정 유형 (risk_type)"
+              value={risk_type}
+              accent={accent}
+              mutedTextClass={mutedTextClass}
+              internalTextClass={internalTextClass}
+            />
+
+            <ResultField
+              label="안내 메시지 (result_message)"
+              value={result_message}
+              accent={accent}
+              mutedTextClass={mutedTextClass}
+              internalTextClass={internalTextClass}
+            />
           </div>
 
           <div
             className={`mt-4 rounded-xl border ${accent.borderAccent10} ${surfaceBgClass} p-4`}
           >
             <p className={`text-sm font-semibold ${accent.textAccent}`}>
-              원재료
+              입력 원재료
             </p>
             <p className={`mt-2 text-sm leading-relaxed ${internalTextClass}`}>
-              {product.rawMaterial}
+              {lastResult.rawMaterial || "성분 정보가 입력되지 않았습니다."}
             </p>
-          </div>
-
-          <div
-            className={`mt-4 rounded-xl border ${accent.borderAccent10} ${surfaceBgClass} p-4 space-y-5`}
-          >
-            <div>
-              <p className={`text-sm font-semibold ${accent.textAccent}`}>
-                포함된 알레르기 성분
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {product.allergies.length > 0 ? (
-                  product.allergies.map((a) => (
-                    <span
-                      key={a}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${accent.badgeAccent}`}
-                    >
-                      {a}
-                    </span>
-                  ))
-                ) : (
-                  <p className={`text-sm ${mutedTextClass}`}>
-                    성분에서 알려진 알레르기 유발 성분이 감지되지 않았습니다
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {product.userAllergies.length > 0 && (
-              <div>
-                <p className={`text-sm font-semibold ${accent.textAccent}`}>
-                  내 알레르기 기준
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {product.userAllergies.map((a) => (
-                    <span
-                      key={a}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${accent.badgeAccent}`}
-                    >
-                      {a}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <p className="text-sm font-semibold text-orange-400">
-                ⚠️ 주의 성분
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {product.dangerItems?.length ? (
-                  product.dangerItems.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-orange-400 bg-orange-400/10 px-3 py-1 text-xs font-semibold text-orange-400"
-                    >
-                      {item}
-                    </span>
-                  ))
-                ) : (
-                  <p className={`text-sm ${mutedTextClass}`}>
-                    내 알레르기 기준 주의 성분이 없습니다
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
         </section>
 
