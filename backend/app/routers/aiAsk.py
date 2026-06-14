@@ -59,7 +59,7 @@ def ask_ai(ask: AskOfEating):
     ingredients_input = ", ".join(ingredients) if isinstance(ingredients, list) else ingredients
 
     pre_processed_dict = data_pre_processing(
-        allergy=allergies_input, 
+        allergies=allergies_input, 
         ingredients=ingredients_input, 
         expiration_date=expiration_date, 
         food_name=food_name

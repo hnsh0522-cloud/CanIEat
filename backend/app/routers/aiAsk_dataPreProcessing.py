@@ -1,7 +1,7 @@
 import json
 from app.api.aiAsk_aiAPI import retry_ask
 
-def data_pre_processing(allergy, ingredients, food_name, expiration_date="없음"):
+def data_pre_processing(allergies, ingredients, food_name, expiration_date="없음"):
     """데이터 전처리 함수
     각 단계별 전처리에 관한 요청을 문자열로 서서히 추가해서 최종 요청을 ai에 넘겨서 응답을 받아서 dict로 넘긴다.
     """
@@ -13,13 +13,13 @@ def data_pre_processing(allergy, ingredients, food_name, expiration_date="없음
         "json의 키와 값은 각 단계를 참고하면 돼."
     )
     
-    allergy_question = ""
+    allergies_question = ""
     ingredients_question = ""
     expiration_date_question = ""
     step = 1
 
-    if allergy != "없음":
-        allergy_question = f"{step}단계) {allergy}이랑 식품 성분적으로 포함 관계나 관련 관계에 있어서 똑같은 알레르기 반응을 일으킬 수 있는 다른 성분들을 정리해서 기존 {allergy}에 추가해서 값으로 넣어줘, 키는 'allergy'이고 값은 JSON 배열(List) 형태야. 배열 안의 값은 한글로 들어가야 하고 원래 내가 줬던 값들인 {allergy} 들을 포함시켜야 해.\n"
+    if allergies != "없음":
+        allergies_question = f"{step}단계) {allergies}이랑 식품 성분적으로 포함 관계나 관련 관계에 있어서 똑같은 알레르기 반응을 일으킬 수 있는 다른 성분들을 정리해서 기존 {allergies}에 추가해서 값으로 넣어줘, 키는 'allergy'이고 값은 JSON 배열(List) 형태야. 배열 안의 값은 한글로 들어가야 하고 원래 내가 줬던 값들인 {allergies} 들을 포함시켜야 해.\n"
         step += 1
         
     if ingredients == "없음":
@@ -38,7 +38,7 @@ def data_pre_processing(allergy, ingredients, food_name, expiration_date="없음
     # 앞서 배웠던 삼중 따옴표를 활용한 가독성 높은 프롬프트 조립
         question = f"""{default_question}
 
-    {allergy_question}{ingredients_question}"""
+    {allergies_question}{ingredients_question}"""
 
         # AI 호출 (groq에서 gpt oss 120b가 제일 하루 사용량이나 모델 성능이 괜찮다.)
         answer = retry_ask(try_count=2, question=question, max_tokens=1024, target_model="groq-gpt")
