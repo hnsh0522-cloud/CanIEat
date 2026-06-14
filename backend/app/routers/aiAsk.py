@@ -36,9 +36,9 @@ def ask_ai(ask: AskOfEating):
     if(convert_dateformatstr_to_date != False):
         expiration_date = str(max(0, (convert_dateformatstr_to_date - manufacture_date).days))
     
-    allergy = ask.allergy or "없음"
-    if(allergy == []):
-        allergy = "없음"
+    allergies = ask.allergies or "없음"
+    if(allergies == []):
+        allergies = "없음"
     ingredients = ask.ingredients or "없음"
     if(ingredients == []):
         ingredients = "없음"
@@ -55,11 +55,11 @@ def ask_ai(ask: AskOfEating):
     #2단계 전처리
 
     # data_pre_processing 호출 전, 리스트를 문자열로 명확히 변환해주는 것이 좋습니다.
-    allergy_input = ", ".join(allergy) if isinstance(allergy, list) else allergy
+    allergies_input = ", ".join(allergies) if isinstance(allergies, list) else allergies
     ingredients_input = ", ".join(ingredients) if isinstance(ingredients, list) else ingredients
 
     pre_processed_dict = data_pre_processing(
-        allergy=allergy_input, 
+        allergy=allergies_input, 
         ingredients=ingredients_input, 
         expiration_date=expiration_date, 
         food_name=food_name
@@ -67,7 +67,7 @@ def ask_ai(ask: AskOfEating):
 
     print(f"알레르기 정보, 원료/성분 전처리에 의한 json: {pre_processed_dict}")
 
-    allergy = pre_processed_dict.get("allergy", allergy)
+    allergies = pre_processed_dict.get("allergy", allergies)
     ingredients = pre_processed_dict.get("ingredients", ingredients)
     #expiration_date = pre_processed_dict.get("expiration_date", expiration_date)
 
@@ -81,7 +81,7 @@ def ask_ai(ask: AskOfEating):
     * 제조일자: {manufacture_date or "없음"}
     * 소비기한(일 수): {expiration_date}
     * 제조일로부터 경과일: {days_after_manufacture_date}
-    * 사용자의 알레르기 정보: {allergy}
+    * 사용자의 알레르기 정보: {allergies}
     * 원료/성분: {ingredients}
 
     # 실행 규칙 및 판정 단계 (순서대로 수행할 것)
@@ -126,5 +126,12 @@ def ask_ai(ask: AskOfEating):
     {json_schema}
     """
 
-    answer = json.loads(retry_ask(try_count=2, max_tokens=2048, question=question))
+    isNotJson = True
+    while(isNotJson):
+        try:
+            answer = json.loads(retry_ask(try_count=2, max_tokens=2048, question=question))
+            isNotJson = False
+        except:
+            pass
+
     return answer

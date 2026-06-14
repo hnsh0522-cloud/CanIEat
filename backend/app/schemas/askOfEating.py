@@ -7,5 +7,5 @@ class AskOfEating(BaseModel):
     food_name: str
     manufacture_date: Optional[date] = None
     expiration_date: Optional[str] = None
-    allergy: Optional[List[str]] = None
+    allergies: Optional[List[str]] = None
     ingredients: Optional[List[str]] = None
