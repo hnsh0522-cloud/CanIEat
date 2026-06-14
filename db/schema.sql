@@ -32,5 +32,5 @@ CREATE TABLE detected_allergens (
     analysis_id INT NOT NULL REFERENCES analysis_records(analysis_id) ON DELETE CASCADE,  -- 연결된 분석 기록 ID, analysis_records 테이블 참조                                                 
     allergy_id INT REFERENCES allergies(allergy_id) ON DELETE SET NULL, -- 탐지된 알레르기 ID, allergies 테이블 참조                                                    
     detected_ingredient VARCHAR(100) NOT NULL,  -- 실제 분석에서 탐지된 성분명 예: 탈지분유, 밀가루
-    risk_type VARCHAR(20) CHECK (risk_type IN ('MATCH', 'SIMILAR'))  --탐지 유형: MATCH 정확히 일치 / SIMILAR 유사 성분
+    risk_type VARCHAR(20) CHECK (risk_type IN ('MATCH', 'UNMATCH'))  --탐지 유형: MATCH 정확히 일치 / UMATCH 성분 불일치
     );
