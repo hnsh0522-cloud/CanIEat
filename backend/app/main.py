@@ -88,7 +88,7 @@ app.include_router(aiAsk_router)
 
 if __name__ == "__main__":
     #uvicorn.run(app, host="127.0.0.1", port=8000) #서버 실행, 로컬에서의 접속만 허용
-    uvicorn.run(app, host="0.0.0.0", port=8000) #서버 실행, 외부에서 모든 ip의 접속을 허용
+    uvicorn.run(app, host="0.0.0.0", port=8000) #서버 실행, 호스트의 모든 네트워크 인터페이스로 접속을 허용.
 
 #서버 실행 함수
 def start(mode="local"):
