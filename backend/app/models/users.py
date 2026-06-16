@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func
-from sqlalchemy.orm import relationship
-from app.models.base import Base
+from models import *
+
+from sqlalchemy import Integer, String, Text, TIMESTAMP, func
 
 
 class Users(Base):
