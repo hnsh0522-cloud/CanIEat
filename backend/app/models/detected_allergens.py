@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, CheckConstraint
-from sqlalchemy.orm import relationship
+from models import *
 
-from app.models.base import Base
+from sqlalchemy import Integer, String, ForeignKey, CheckConstraint
 
 
 class DetectedAllergens(Base):

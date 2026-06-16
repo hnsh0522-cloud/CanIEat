@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey, TIMESTAMP, String, func, CheckConstraint
-from sqlalchemy.orm import relationship
+from models import *
 
-from app.models.base import Base
+from sqlalchemy import Integer, Text, ForeignKey, TIMESTAMP, String, func, CheckConstraint
 
 
 class AnalysisRecords(Base):

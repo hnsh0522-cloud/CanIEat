@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship
+from models import *
 
-from app.models.base import Base
+from sqlalchemy import Integer, Text, ForeignKey, UniqueConstraint
 
 
 class UserAllergies(Base):
