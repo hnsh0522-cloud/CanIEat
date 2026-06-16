@@ -131,7 +131,8 @@ def ask_ai(ask: AskOfEating):
         try:
             answer = json.loads(retry_ask(try_count=2, max_tokens=2048, question=question))
             isNotJson = False
+            print(f"ai 응답 메시지: {answer}")
         except:
-            pass
+            print("ai 응답 처리에 문제가 발생. 재시도 합니다.")
 
     return answer
