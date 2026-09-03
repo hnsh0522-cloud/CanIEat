@@ -114,3 +114,29 @@ BEGIN
 END;
 $$;
 
+
+-- 사용자가 먹지 못하는 음식 등록
+CREATE OR REPLACE PROCEDURE add_user_avoid_food(
+    p_user_id INT,
+    p_food_name VARCHAR,
+    p_reason TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO user_avoid_foods (
+        user_id,
+        food_name,
+        reason
+    )
+    VALUES (
+        p_user_id,
+        p_food_name,
+        p_reason
+    )
+    ON CONFLICT (user_id, food_name)
+    DO UPDATE SET
+        reason = EXCLUDED.reason;
+END;
+$$;
+
