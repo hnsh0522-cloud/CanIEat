@@ -66,6 +66,7 @@ $$;
 -- 분석 기록 저장
 CREATE OR REPLACE PROCEDURE create_analysis_record(
     p_user_id INT,
+    p_product_name VARCHAR,
     p_risk_level VARCHAR,
     p_result_message TEXT,
     INOUT p_analysis_id INT
@@ -75,11 +76,13 @@ AS $$
 BEGIN
     INSERT INTO analysis_records (
         user_id,
+        product_name,
         risk_level,
         result_message
     )
     VALUES (
         p_user_id,
+        p_product_name,
         p_risk_level,
         p_result_message
     )
