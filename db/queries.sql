@@ -54,3 +54,16 @@ JOIN users u ON ar.user_id = u.user_id
 LEFT JOIN detected_allergens da ON ar.analysis_id = da.analysis_id
 LEFT JOIN allergies a ON da.allergy_id = a.allergy_id
 ORDER BY ar.analysis_id;
+
+
+-- 사용자별 먹지 못하는 음식 조회
+SELECT
+    u.nickname AS user_name,
+    uaf.avoid_food_id AS avoid_food_id,
+    uaf.food_name AS food_name,
+    uaf.reason AS reason,
+    uaf.created_at AS created_at
+FROM user_avoid_foods uaf
+JOIN users u ON uaf.user_id = u.user_id
+WHERE uaf.user_id = 1
+ORDER BY uaf.created_at DESC;
