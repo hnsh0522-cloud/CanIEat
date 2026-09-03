@@ -22,6 +22,7 @@ export default function MyPage() {
   const { isDark } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedAllergies, setSelectedAllergies] = useState(user.allergies);
+  const [customAllergy, setCustomAllergy] = useState("");
 
   const handleLogout = () => {
     logout();
@@ -32,6 +33,13 @@ export default function MyPage() {
     setSelectedAllergies((prev) =>
       prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item],
     );
+  };
+
+  const addCustomAllergy = () => {
+    const item = customAllergy.trim();
+    if (!item || selectedAllergies.includes(item)) return;
+    setSelectedAllergies((prev) => [...prev, item]);
+    setCustomAllergy("");
   };
 
   const handleSave = () => {
@@ -82,7 +90,7 @@ export default function MyPage() {
             <h2
               className={`text-lg font-bold ${isDark ? "text-teal-400" : "text-teal-700"}`}
             >
-              내 알레르기 설정
+              내 알레르기 설정 및 특이사항
             </h2>
             {!isEditing && (
               <button
@@ -147,6 +155,53 @@ export default function MyPage() {
                     </div>
                   </div>
                 ))}
+                <div>
+                  <p
+                    className={`mb-2 text-xs font-bold ${isDark ? "text-teal-400" : "text-teal-700"}`}
+                  >
+                    특이사항
+                  </p>
+                  <input
+                    type="text"
+                    value={customAllergy}
+                    onChange={(e) => setCustomAllergy(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomAllergy();
+                      }
+                    }}
+                    placeholder="예시: 과민성 대장 증후군"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${isDark ? "border-slate-600 bg-[#0f172a] text-white placeholder-slate-500 focus:border-teal-400" : "border-gray-200 bg-white text-gray-700 placeholder-gray-400 focus:border-teal-700"}`}
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedAllergies
+                      .filter(
+                        (a) =>
+                          !allergyCategories.some((cat) =>
+                            cat.items.includes(a),
+                          ),
+                      )
+                      .map((item) => (
+                        <label
+                          key={item}
+                          className="flex cursor-pointer items-center gap-1"
+                        >
+                          <input
+                            type="checkbox"
+                            checked
+                            onChange={() => toggleAllergy(item)}
+                            className="accent-teal-500"
+                          />
+                          <span
+                            className={`text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                          >
+                            {item}
+                          </span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4 flex gap-3">
@@ -159,6 +214,7 @@ export default function MyPage() {
                 <button
                   onClick={() => {
                     setSelectedAllergies(user.allergies);
+                    setCustomAllergy("");
                     setIsEditing(false);
                   }}
                   className={`rounded-xl border-2 px-6 py-2 text-sm font-semibold transition-all ${isDark ? "border-slate-500 text-slate-400 hover:bg-slate-700" : "border-gray-300 text-gray-500 hover:bg-gray-100"}`}

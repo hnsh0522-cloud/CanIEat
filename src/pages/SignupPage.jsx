@@ -31,6 +31,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedAllergies, setSelectedAllergies] = useState([]);
+  const [customAllergy, setCustomAllergy] = useState("");
 
   // 2. Custom Hooks 호출 (useAuthStore를 컴포넌트 내부 최상단으로 이동)
   const { login } = useAuthStore();
@@ -54,6 +55,13 @@ export default function SignupPage() {
     setSelectedAllergies((prev) =>
       prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item],
     );
+  };
+
+  const addCustomAllergy = () => {
+    const item = customAllergy.trim();
+    if (!item || selectedAllergies.includes(item)) return;
+    setSelectedAllergies((prev) => [...prev, item]);
+    setCustomAllergy("");
   };
 
   const handleSubmit = () => {
@@ -126,16 +134,16 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <span className={`ml-2 text-xs ${accent.textAccent}`}>
+              빠른 답변을 위해 이름과 이메일을 입력해주세요.
+            </span>
           </div>
 
           <div>
             <label
               className={`mb-3 block text-sm font-medium ${labelTextClass}`}
             >
-              알레르기 선택
-              <span className={`ml-2 text-xs ${accent.textAccent}`}>
-                빠른 답변을 위해 이름과 이메일을 입력해주세요.
-              </span>
+              알레르기 선택 및 특이사항
             </label>
 
             <div
@@ -166,20 +174,47 @@ export default function SignupPage() {
                   </div>
                 </div>
               ))}
-            </div>
-            <div>
-              <label
-                className={`mb-1 block text-sm font-medium ${labelTextClass}`}
-              >
-                알레르기 세부 사항
-              </label>
-              <input
-                type="email"
-                placeholder="알레르기 세부 사항을 적어주세요."
-                className={inputClassName}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div>
+                <p className={`mb-2 text-xs font-bold ${accent.textAccent}`}>
+                  특이사항
+                </p>
+                <input
+                  type="text"
+                  value={customAllergy}
+                  onChange={(e) => setCustomAllergy(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCustomAllergy();
+                    }
+                  }}
+                  placeholder="예시: 과민성 대장 증후군"
+                  className={inputClassName}
+                />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedAllergies
+                    .filter(
+                      (a) =>
+                        !allergyCategories.some((cat) => cat.items.includes(a)),
+                    )
+                    .map((item) => (
+                      <label
+                        key={item}
+                        className="flex cursor-pointer items-center gap-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked
+                          onChange={() => toggleAllergy(item)}
+                          className={accent.accentColor}
+                        />
+                        <span className={`text-sm ${labelTextClass}`}>
+                          {item}
+                        </span>
+                      </label>
+                    ))}
+                </div>
+              </div>
             </div>
             {selectedAllergies.length > 0 && (
               <p className={`mt-2 text-xs ${accent.textAccent}`}>
