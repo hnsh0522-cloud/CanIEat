@@ -34,3 +34,12 @@ CREATE TABLE detected_allergens (
     detected_ingredient VARCHAR(100) NOT NULL,  -- 실제 분석에서 탐지된 성분명 예: 탈지분유, 밀가루
     risk_type VARCHAR(20) CHECK (risk_type IN ('MATCH', 'UNMATCH'))  --탐지 유형: MATCH 정확히 일치 / UMATCH 성분 불일치
     );
+
+CREATE TABLE user_avoid_foods (
+    avoid_food_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    food_name VARCHAR(100) NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, food_name)
+);
