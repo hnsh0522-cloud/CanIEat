@@ -163,7 +163,7 @@ async function askGemini(question) {
 4. 문단 구분은 줄바꿈으로만 표현
 5. 일반인이 이해하기 쉬운 언어로 설명
 6. 답변은 간결하게 핵심만 전달
-7. 유저가 식품이나 알레르기가 아닌 정보를 물어볼 경우에는 '식품 성분 질문이 아닙니다.'라고 답변해주세요.
+7. 유저가 식품이나 알레르기가 아닌 정보를 물어볼 경우에는 '저는 식품 관련 AI입니다. 최근에 음식을 먹다가 문제가 생겼나요?.' 라고 답변해주세요.
 
 사용자 질문: ${question}`,
               },
@@ -386,7 +386,9 @@ export default function AiChatPage() {
         </div>
 
         <div className="relative flex min-w-0 flex-1 flex-col">
-          <div className={`border-b ${accent.borderAccent20} px-4 py-4 md:px-6`}>
+          <div
+            className={`border-b ${accent.borderAccent20} px-4 py-4 md:px-6`}
+          >
             <div className="flex items-start gap-3">
               <button
                 type="button"
@@ -398,7 +400,9 @@ export default function AiChatPage() {
                 <PanelToggleIcon />
               </button>
               <div className="min-w-0 flex-1">
-                <h1 className={`text-lg font-bold md:text-xl ${headingTextClass}`}>
+                <h1
+                  className={`text-lg font-bold md:text-xl ${headingTextClass}`}
+                >
                   AI 식품 성분 질문
                 </h1>
                 <p className={`mt-1 text-sm ${mutedTextClass}`}>
@@ -462,7 +466,9 @@ export default function AiChatPage() {
             )}
           </div>
 
-          <div className={`border-t ${accent.borderAccent20} px-4 py-4 md:px-6`}>
+          <div
+            className={`border-t ${accent.borderAccent20} px-4 py-4 md:px-6`}
+          >
             <div className="flex items-end gap-3">
               <textarea
                 value={input}
