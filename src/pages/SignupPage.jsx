@@ -3,6 +3,7 @@ import { useState } from "react";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
 import useAuthStore from "../store/useAuthStore";
+import { confirmPassword } from "../api/auth.js";
 
 const allergyCategories = [
   {
@@ -30,6 +31,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [selectedAllergies, setSelectedAllergies] = useState([]);
   const [customAllergy, setCustomAllergy] = useState("");
 
@@ -65,8 +67,17 @@ export default function SignupPage() {
   };
 
   const handleSubmit = () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !password.trim() ||
+      !passwordConfirm.trim()
+    ) {
       alert("모든 항목을 입력해주세요.");
+      return;
+    }
+    if (!confirmPassword(password, passwordConfirm)) {
+      alert("비밀번호가 일치하지 않습니다.");
       return;
     }
     login(name, email, selectedAllergies);
@@ -134,6 +145,20 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+
+            <label
+              className={`mb-1 mt-4 block text-sm font-medium ${labelTextClass}`}
+            >
+              비밀번호 확인
+            </label>
+            <input
+              type="password"
+              placeholder="비밀번호를 다시 입력해주세요"
+              className={inputClassName}
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+            />
+
             <span className={`ml-2 text-xs ${accent.textAccent}`}>
               빠른 답변을 위해 이름과 이메일을 입력해주세요.
             </span>
