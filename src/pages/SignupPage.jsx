@@ -24,6 +24,34 @@ const allergyCategories = [
   },
 ];
 
+const PASSWORD_RULE_HINT = "영문 대/소문자, 숫자, 특수문자 포함 8~16자";
+const ALLOWED_SPECIAL_CHARS = "!@#$%^&*-_";
+const PASSWORD_RULE_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*\-_])[A-Za-z\d!@#$%^&*\-_]{8,16}$/;
+
+function getPasswordRuleMessage(value) {
+  if (!value) return "";
+  if (PASSWORD_RULE_REGEX.test(value)) {
+    return "비밀번호 보안 규칙을 만족합니다.";
+  }
+  if (value.length < 8 || value.length > 16) {
+    return "비밀번호는 8~16자로 입력해주세요.";
+  }
+  if (!/[A-Z]/.test(value)) {
+    return "영문 대문자를 최소 1개 이상 포함해주세요.";
+  }
+  if (!/[a-z]/.test(value)) {
+    return "영문 소문자를 최소 1개 이상 포함해주세요.";
+  }
+  if (!/\d/.test(value)) {
+    return "숫자를 최소 1개 이상 포함해주세요.";
+  }
+  if (!new RegExp(`[${ALLOWED_SPECIAL_CHARS.replace(/[-]/g, "\\-")}]`).test(value)) {
+    return `특수문자(${ALLOWED_SPECIAL_CHARS.split("").join(" ")})를 최소 1개 이상 포함해주세요.`;
+  }
+  return `허용되지 않은 문자가 포함되어 있습니다. 특수문자는 ${ALLOWED_SPECIAL_CHARS.split("").join(" ")} 만 사용할 수 있습니다.`;
+}
+
 export default function SignupPage() {
   const navigate = useNavigate();
 
@@ -66,6 +94,11 @@ export default function SignupPage() {
     setCustomAllergy("");
   };
 
+  const isPasswordValid = PASSWORD_RULE_REGEX.test(password);
+  const passwordRuleMessage = getPasswordRuleMessage(password);
+  const isPasswordConfirmEmpty = !passwordConfirm;
+  const isPasswordMatched = confirmPassword(password, passwordConfirm);
+
   const handleSubmit = () => {
     if (
       !name.trim() ||
@@ -74,6 +107,10 @@ export default function SignupPage() {
       !passwordConfirm.trim()
     ) {
       alert("모든 항목을 입력해주세요.");
+      return;
+    }
+    if (!isPasswordValid) {
+      alert(PASSWORD_RULE_HINT);
       return;
     }
     if (!confirmPassword(password, passwordConfirm)) {
@@ -145,6 +182,16 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <p className={`mt-1 text-xs ${mutedTextClass}`}>{PASSWORD_RULE_HINT}</p>
+            {passwordRuleMessage && (
+              <p
+                className={`mt-1 text-xs ${
+                  isPasswordValid ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {passwordRuleMessage}
+              </p>
+            )}
 
             <label
               className={`mb-1 mt-4 block text-sm font-medium ${labelTextClass}`}
@@ -158,6 +205,17 @@ export default function SignupPage() {
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
             />
+            {!isPasswordConfirmEmpty && (
+              <p
+                className={`mt-1 text-xs ${
+                  isPasswordMatched ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {isPasswordMatched
+                  ? "✓ 비밀번호가 일치합니다."
+                  : "✕ 비밀번호가 일치하지 않습니다."}
+              </p>
+            )}
 
             <span className={`ml-2 text-xs ${accent.textAccent}`}>
               빠른 답변을 위해 이름과 이메일을 입력해주세요.
@@ -249,8 +307,10 @@ export default function SignupPage() {
           </div>
 
           <button
+            type="button"
             onClick={handleSubmit}
-            className={`mt-2 w-full rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200 ${accent.btnOutline}`}
+            disabled={!isPasswordValid}
+            className={`mt-2 w-full rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${accent.btnOutline}`}
           >
             회원가입
           </button>
