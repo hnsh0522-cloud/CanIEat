@@ -211,7 +211,7 @@ export default function MyPage() {
                   <p
                     className={`mb-2 text-xs font-bold ${isDark ? "text-teal-400" : "text-teal-700"}`}
                   >
-                    특이사항
+                    특이사항 (데이터 반영을 위해서 반드시 엔터 키를 눌러주세요.)
                   </p>
                   <input
                     type="text"

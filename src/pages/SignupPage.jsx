@@ -46,7 +46,9 @@ function getPasswordRuleMessage(value) {
   if (!/\d/.test(value)) {
     return "숫자를 최소 1개 이상 포함해주세요.";
   }
-  if (!new RegExp(`[${ALLOWED_SPECIAL_CHARS.replace(/[-]/g, "\\-")}]`).test(value)) {
+  if (
+    !new RegExp(`[${ALLOWED_SPECIAL_CHARS.replace(/[-]/g, "\\-")}]`).test(value)
+  ) {
     return `특수문자(${ALLOWED_SPECIAL_CHARS.split("").join(" ")})를 최소 1개 이상 포함해주세요.`;
   }
   return `허용되지 않은 문자가 포함되어 있습니다. 특수문자는 ${ALLOWED_SPECIAL_CHARS.split("").join(" ")} 만 사용할 수 있습니다.`;
@@ -182,7 +184,9 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <p className={`mt-1 text-xs ${mutedTextClass}`}>{PASSWORD_RULE_HINT}</p>
+            <p className={`mt-1 text-xs ${mutedTextClass}`}>
+              {PASSWORD_RULE_HINT}
+            </p>
             {passwordRuleMessage && (
               <p
                 className={`mt-1 text-xs ${
@@ -259,7 +263,7 @@ export default function SignupPage() {
               ))}
               <div>
                 <p className={`mb-2 text-xs font-bold ${accent.textAccent}`}>
-                  특이사항
+                  특이사항 (데이터 반영을 위해서 반드시 엔터 키를 눌러주세요.)
                 </p>
                 <input
                   type="text"
