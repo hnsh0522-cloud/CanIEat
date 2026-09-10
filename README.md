@@ -27,3 +27,5 @@ npm run preview        # 빌드 결과 미리보기
 - 회원가입/로그인 및 알레르기 프로필 관리 (localStorage 저장)
 - Gemini AI 기반 식품 성분 질문
 - 모바일 반응형 UI 및 다크 모드
+=======
+this is project for web app that analyze and decide whether you can eat or not
