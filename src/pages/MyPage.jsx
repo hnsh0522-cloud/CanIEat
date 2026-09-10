@@ -48,6 +48,13 @@ export default function MyPage() {
     alert("알레르기 정보가 업데이트되었습니다.");
   };
 
+  const presetAllergies = user.allergies.filter((a) =>
+    allergyCategories.some((cat) => cat.items.includes(a)),
+  );
+  const customNotes = user.allergies.filter(
+    (a) => !allergyCategories.some((cat) => cat.items.includes(a)),
+  );
+
   return (
     <div
       className={`min-h-screen pt-[50px] ${isDark ? "bg-[#0f172a]" : "bg-gray-50"}`}
@@ -104,22 +111,67 @@ export default function MyPage() {
 
           {!isEditing ? (
             // 알레르기 배지 표시
-            <div className="flex flex-wrap gap-2">
-              {user.allergies.length > 0 ? (
-                user.allergies.map((a) => (
-                  <span
-                    key={a}
-                    className={`rounded-full border px-3 py-1 text-sm ${isDark ? "border-teal-400 text-teal-400" : "border-teal-700 text-teal-700"}`}
+            customNotes.length > 0 ? (
+              <div className="space-y-4">
+                <div>
+                  <p
+                    className={`mb-2 text-xs font-bold ${isDark ? "text-teal-400" : "text-teal-700"}`}
                   >
-                    {a}
-                  </span>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400">
-                  설정된 알레르기가 없어요
-                </p>
-              )}
-            </div>
+                    알레르기
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {presetAllergies.length > 0 ? (
+                      presetAllergies.map((a) => (
+                        <span
+                          key={a}
+                          className={`rounded-full border px-3 py-1 text-sm ${isDark ? "border-teal-400 text-teal-400" : "border-teal-700 text-teal-700"}`}
+                        >
+                          {a}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-400">
+                        설정된 알레르기가 없어요
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p
+                    className={`mb-2 text-xs font-bold ${isDark ? "text-teal-400" : "text-teal-700"}`}
+                  >
+                    특이사항
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {customNotes.map((a) => (
+                      <span
+                        key={a}
+                        className={`rounded-full border px-3 py-1 text-sm ${isDark ? "border-teal-400 text-teal-400" : "border-teal-700 text-teal-700"}`}
+                      >
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {user.allergies.length > 0 ? (
+                  user.allergies.map((a) => (
+                    <span
+                      key={a}
+                      className={`rounded-full border px-3 py-1 text-sm ${isDark ? "border-teal-400 text-teal-400" : "border-teal-700 text-teal-700"}`}
+                    >
+                      {a}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400">
+                    설정된 알레르기가 없어요
+                  </p>
+                )}
+              </div>
+            )
           ) : (
             // 알레르기 수정 체크박스
             <div>
@@ -171,7 +223,7 @@ export default function MyPage() {
                         addCustomAllergy();
                       }
                     }}
-                    placeholder="예시: 과민성 대장 증후군"
+                    placeholder="예시: 과민성 대장 증후군, 매운 음식을 못 먹음 등"
                     className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${isDark ? "border-slate-600 bg-[#0f172a] text-white placeholder-slate-500 focus:border-teal-400" : "border-gray-200 bg-white text-gray-700 placeholder-gray-400 focus:border-teal-700"}`}
                   />
                   <div className="mt-2 flex flex-wrap gap-2">
