@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import useThemeStore from "../store/useThemeStore.js";
 import useAccentClasses from "../hooks/useAccentClasses.js";
+import useAuthStore from "../store/useAuthStore.js";
 
 const recentConversations = [
   "카제인 성분에 대해 질문",
@@ -137,12 +138,15 @@ function UserIcon({ className = "h-5 w-5" }) {
   );
 }
 
-async function askGemini(question) {
+async function askGemini(question, allergies) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
+
+  const allergyList =
+    allergies?.length > 0 ? allergies.join(", ") : "등록된 알레르기 없음";
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
@@ -156,6 +160,8 @@ async function askGemini(question) {
               {
                 text: `당신은 식품 성분 및 알레르기 전문 AI 어시스턴트입니다.
 
+회원 알레르기 및 특이사항 (마이페이지와 동일한 정보): ${allergyList}
+
 규칙:
 1. 반드시 한국어로만 답변
 2. 마크다운 문법 사용 금지 (**, ##, -, * 등 사용 금지)
@@ -164,6 +170,8 @@ async function askGemini(question) {
 5. 일반인이 이해하기 쉬운 언어로 설명
 6. 답변은 간결하게 핵심만 전달
 7. 유저가 식품이나 알레르기가 아닌 정보를 물어볼 경우에는 '저는 식품 관련 AI입니다. 최근에 음식을 먹다가 문제가 생겼나요?.' 라고 답변해주세요.
+8. 특정 식품을 먹어도 되는지 물어보면 위 회원 알레르기 및 특이사항을 기준으로 판단할 것. 포함되면 섭취를 피하라고 하고, 해당되지 않으면 등록 정보 기준으로는 섭취 가능해 보인다고 안내할 것. 단 개인차는 있을 수 있다고 짧게 덧붙일 것.
+9. 등록된 알레르기가 없으면 일반 식품 정보만 안내하고, 맞춤 판단은 회원가입 또는 마이페이지에서 알레르기를 등록하라고 안내할 것.
 
 사용자 질문: ${question}`,
               },
@@ -195,7 +203,9 @@ export default function AiChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState(0);
   const { isDark } = useThemeStore();
+  const { isLoggedIn, user } = useAuthStore();
   const accent = useAccentClasses();
+  const userAllergies = isLoggedIn ? user.allergies : [];
 
   const pageBgClass = isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]";
   const pageTextClass = isDark ? "text-slate-100" : "text-[#1e293b]";
@@ -237,7 +247,7 @@ export default function AiChatPage() {
     setIsLoading(true);
 
     try {
-      const aiMessage = await askGemini(question);
+      const aiMessage = await askGemini(question, userAllergies);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: aiMessage },
