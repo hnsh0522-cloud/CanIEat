@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.AskOfEating import AskOfEating
 from app.controller.aiAsk import getAiAnswer
-from app.controller.extractFoodImage import extract_food_info
+from app.controller.extractFoodImage import InvalidAIResponseError, extract_food_info
 from app.database import get_db
 
 
@@ -35,12 +35,18 @@ async def extractFoodInfo(image: UploadFile = File(...)):
         return await extract_food_info(image_bytes, image.content_type or "")
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+    except InvalidAIResponseError as error:
+        logger.exception("AI model returned an invalid food-info response")
+        raise HTTPException(
+            status_code=502,
+            detail="AI 식품 정보 응답 형식이 올바르지 않습니다. 잠시 후 다시 시도해주세요.",
+        ) from error
     except APIError as error:
-        logger.exception("Vision model API request failed")
+        logger.exception("Food-info model API request failed")
         raise HTTPException(
             status_code=502,
             detail="비전 모델 API 요청에 실패했습니다. 잠시 후 다시 시도해주세요.",
         ) from error
     except RuntimeError as error:
-        logger.exception("Vision model configuration failed")
+        logger.exception("Food-info model configuration failed")
         raise HTTPException(status_code=503, detail=str(error)) from error

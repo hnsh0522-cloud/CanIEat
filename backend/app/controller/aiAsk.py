@@ -2,7 +2,7 @@ from datetime import date
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.parse_date import parse_duration, try_parse_date
-from app.api.aiAsk_aiAPI import retry_ask
+from app.api.aiAsk_aiAPI import FIXED_SYSTEM_PROMPT, retry_ask
 from app.controller.aiAsk_dataPreProcessing import data_pre_processing
 from app.crud.allergy_crud import get_all_allergies
 from app.schemas.AskOfEating import AskOfEating, Ingredient
@@ -319,7 +319,7 @@ async def getAiAnswer(ask: AskOfEating, db: AsyncSession):
                 try_count=2,
                 max_tokens=2500,
                 question=question,
-                use_fixed_prompt=True,
+                system_prompt=FIXED_SYSTEM_PROMPT,
                 target_model="openai/gpt-6-luna",
             )
             answer = json.loads(answer_text)

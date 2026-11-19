@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 from pathlib import Path
 
@@ -14,6 +15,11 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 #======================================================
 class failed_ask_ai(Exception):
     pass
+
+
+class InvalidAIResponseError(Exception):
+    pass
+
 
 #======================================================
 # 고정 프롬프트 메시지
@@ -576,30 +582,372 @@ JSON을 출력하기 전에 다음 사항을 확인한다.
 모든 검증을 마친 후 JSON 객체만 출력한다.
 """
 
-FOOD_IMAGE_EXTRACTION_PROMPT = """
-사진에 보이는 식품 정보를 읽어 아래 구조의 JSON 객체만 반환하세요.
-사진에서 확인할 수 없는 값은 추측하지 말고 빈 문자열 또는 빈 배열로 둡니다.
-영양성분은 영양정보 표시에 보이는 항목과 수치·단위를 각각 name, amount로 반환합니다.
-1회 제공량이나 총 내용량 등 영양성분의 기준도 amount에 포함합니다.
-원료는 표시된 원료를 우선하며, 조리된 음식 사진처럼 원료 표시가 없을 때는
-사진에서 명확히 식별 가능한 원료만 포함합니다. 추정이 필요한 성분은 추가하지 않습니다.
-소비기한은 표시된 문구를 그대로 반환합니다.
+FOOD_IMAGE_OCR_PROMPT = """
+당신은 이미지의 텍스트를 추출하는 OCR 시스템입니다.
+
+입력된 이미지에 실제로 표시되어 있는 모든 텍스트를 읽고 추출하세요.
+
+당신의 유일한 역할은 문자 인식(OCR)입니다.
+텍스트의 의미를 해석하거나 정보를 분류하거나 요약하지 마세요.
+
+[추출 규칙]
+
+1. 이미지에 보이는 모든 텍스트를 최대한 빠짐없이 추출합니다.
+2. 텍스트는 원문 그대로 유지합니다.
+3. 한글, 영문, 숫자, 특수문자 및 단위를 정확하게 인식합니다.
+4. 텍스트의 위치와 순서를 가능한 한 유지합니다.
+5. 문장, 문단, 목록 및 표의 줄바꿈을 최대한 보존합니다.
+6. 표 형태의 텍스트는 행과 열의 관계가 드러나도록 추출합니다.
+7. 숫자와 단위는 임의로 수정하거나 변환하지 않습니다.
+8. 글자가 불분명하면 임의로 추측하지 않습니다.
+9. 동일한 텍스트가 여러 곳에 표시되어 있다면 임의로 제거하지 않습니다.
+10. 이미지에 없는 텍스트를 추가하지 않습니다.
+
+[추출 대상]
+
+식품 포장지, 식품 라벨, 식품 광고, 제품 설명,
+메뉴판, 일반 문서 등 이미지에 포함된 모든 텍스트를 추출합니다.
+
+식품 관련 텍스트인지 판단하지 말고 보이는 글자를 모두 추출하세요.
+
+[출력 형식]
 
 {
-  "food_name": "식품명",
-  "company_name": "업체명",
-  "report_number": "품목보고번호",
-  "expiration_date": "소비기한",
-  "ingredients": [{"name": "원료명", "amount": ""}],
-  "nutrition": [{"name": "영양성분명", "amount": "표시된 수치와 단위"}]
+  "raw_text": "이미지에서 추출한 전체 텍스트"
 }
+
+[중요]
+
+- raw_text 외에 다른 필드를 만들지 마세요.
+- 텍스트를 식품명, 원료, 영양성분 등으로 분류하지 마세요.
+- 텍스트를 요약하거나 재구성하지 마세요.
+- 반드시 유효한 JSON 객체만 반환하세요.
+- Markdown 코드 블록이나 설명을 출력하지 마세요.
 """
 
-FOOD_IMAGE_VISION_MODEL = "qwen/qwen3-vl-30b-a3b-instruct"
+FOOD_INFO_CLASSIFICATION_PROMPT = """
+당신은 식품 정보 분석 및 의미 기반 정보 분류 전문 AI입니다.
+
+입력으로 제공되는 데이터는 식품 이미지에서 OCR 모델이 추출한 원문 텍스트입니다.
+
+당신의 역할은 OCR 텍스트 전체를 분석하여 식품과 관련된 정보를 찾아내고,
+각 정보의 의미에 따라 지정된 JSON 항목으로 분류하는 것입니다.
+
+중요한 것은 텍스트에 특정 항목의 명칭이 존재하는지 여부가 아닙니다.
+
+텍스트의 의미, 문맥, 주변 표현 및 숫자와 단위의 관계를 종합적으로 판단하여
+해당 정보가 무엇을 의미하는지 파악해야 합니다.
+
+식품 표시사항의 정형화된 형식뿐 아니라 일반적인 문장,
+광고 문구, 제품 설명, 포장 디자인에 포함된 텍스트에서도
+식품 관련 정보를 찾아 분류해야 합니다.
+
+────────────────────
+[1. 핵심 분석 원칙]
+────────────────────
+
+1. OCR 텍스트 전체를 먼저 읽고 전체적인 내용을 파악합니다.
+
+2. 특정 단어가 존재하는지만으로 정보를 분류하지 않습니다.
+   텍스트의 의미와 문맥을 기준으로 판단합니다.
+
+3. 식품 표시사항처럼 명확하게 구분된 정보가 있다면
+   해당 표시 명칭과 구조를 우선적인 근거로 사용합니다.
+
+4. 별도의 항목명이 없는 일반 문장에서도
+   식품명, 원료, 영양성분, 업체명 등의 정보를 찾아냅니다.
+
+5. 제품명이나 원료명이 문장 속에 포함되어 있어도
+   의미상 해당 정보에 해당한다면 추출합니다.
+
+6. 식품과 관련이 있다는 이유만으로 모든 텍스트를
+   식품 정보로 분류하지 않습니다.
+
+7. OCR 텍스트에 존재하지 않는 정보는 절대로 추측하거나 생성하지 않습니다.
+
+8. 정보의 의미를 확실하게 판단할 수 없는 경우에는
+   해당 항목에 임의로 넣지 않습니다.
+
+────────────────────
+[2. 식품 표시사항 형식 판단]
+────────────────────
+
+먼저 입력된 텍스트가 어떤 형태의 식품 정보인지 판단합니다.
+
+다음과 같은 형식이 존재할 수 있습니다.
+
+- 식품 표시사항 및 성분표
+- 제품 포장지 앞면
+- 제품 포장지 뒷면
+- 영양정보 표
+- 원재료명 표시
+- 식품 광고 및 홍보 문구
+- 제품 상세 설명
+- 메뉴판 및 음식 설명
+- 식품 관련 일반 문장
+- 여러 형식이 혼합된 이미지
+
+식품 표시사항 형식이 명확하다면
+표시 명칭, 표의 구조, 항목 간 관계를 적극적으로 활용합니다.
+
+예를 들어 다음과 같은 표현은 의미상 각각의 정보로 판단합니다.
+
+"원재료명" 다음에 나오는 원료 목록
+→ ingredients
+
+"영양정보" 아래에 표시된 영양성분과 수치
+→ nutrition
+
+"제조원" 또는 "제조업소" 다음에 표시된 업체명
+→ company_name
+
+"소비기한" 다음에 표시된 날짜
+→ expiration_date
+
+단, 위와 같은 명시적인 표시 명칭이 없더라도
+문맥상 의미가 명확하다면 동일하게 분류합니다.
+
+────────────────────
+[3. food_name - 식품명]
+────────────────────
+
+식품 또는 제품 자체를 식별하는 이름을 추출합니다.
+
+다음과 같은 경우를 포함합니다.
+
+- 제품 포장지에 표시된 제품명
+- 브랜드와 결합된 제품명
+- 광고 문구에서 명확하게 언급된 식품명
+- 메뉴나 제품 설명에 등장하는 음식명
+- 표시사항에 제품명이라는 명칭 없이 나타난 제품명
+
+판단 기준:
+
+- 제품 자체를 지칭하는 이름인지 판단합니다.
+- 브랜드명, 회사명, 광고 문구와 구분합니다.
+- 일반적인 식품 종류와 실제 제품명을 구분합니다.
+- 여러 후보가 있으면 제품을 가장 구체적으로 식별하는 이름을 우선합니다.
+- 제품명이 명확하지 않으면 빈 문자열로 반환합니다.
+
+────────────────────
+[4. company_name - 업체명]
+────────────────────
+
+식품의 제조, 생산, 판매, 유통 또는 수입과 관련된 업체명을 추출합니다.
+
+다음과 같은 표현을 참고합니다.
+
+- 제조원
+- 제조업체
+- 제조업소
+- 판매원
+- 유통전문판매원
+- 수입원
+- 수입판매원
+- 업체 소개 문구
+- 제품 설명에 포함된 제조 및 판매 관련 문장
+
+명시적인 업체 관련 표시가 없더라도
+문맥상 식품을 제조하거나 판매하는 업체임이 명확하면 추출할 수 있습니다.
+
+단순히 제품명이나 브랜드명에 포함된 명칭을
+실제 업체명으로 단정하지 않습니다.
+
+여러 업체가 존재한다면 제조 관련 업체를 우선합니다.
+
+────────────────────
+[5. report_number - 품목보고번호]
+────────────────────
+
+품목제조보고번호 또는 품목보고번호에 해당하는 값을 추출합니다.
+
+- 명시적인 표시 명칭을 우선적으로 참고합니다.
+- 번호의 형식과 주변 문맥을 함께 판단합니다.
+- 전화번호, 사업자등록번호, 바코드 번호와 혼동하지 않습니다.
+- 해당 번호가 명확하게 식별되지 않으면 빈 문자열로 반환합니다.
+
+────────────────────
+[6. expiration_date - 소비기한]
+────────────────────
+
+식품의 소비기한에 해당하는 정보를 추출합니다.
+
+다음 표현을 문맥에 따라 구분합니다.
+
+- 소비기한
+- 유통기한
+- 품질유지기한
+- 제조일자
+- 별도 표기된 날짜
+- 제조일로부터 일정 기간이라는 설명
+
+소비기한이라고 명시된 정보를 우선합니다.
+
+다른 종류의 날짜를 소비기한으로 임의 분류하지 않습니다.
+
+제조일자와 보관기간만 존재하는 경우
+소비기한을 임의로 계산하지 않습니다.
+
+확인되지 않으면 빈 문자열로 반환합니다.
+
+────────────────────
+[7. ingredients - 원료]
+────────────────────
+
+식품을 구성하거나 제조하는 데 사용된 원료와 성분을 추출합니다.
+
+명시적인 원재료명 표시가 없어도 다음과 같은 정보를 분석합니다.
+
+- 제품 설명에 언급된 원료
+- 광고 문구에 언급된 주요 원료
+- 식품의 특징을 설명하는 원료
+- 원료의 함량이나 배합비율
+- 복합원재료와 그 하위 원료
+- 원료의 종류 및 구성에 관한 설명
+
+판단 기준:
+
+- 실제 식품의 구성 원료인지 판단합니다.
+- 단순히 맛이나 향을 표현하는 단어와 실제 원료를 구분합니다.
+- 원료명과 영양성분명을 혼동하지 않습니다.
+- 원료의 함량이 표시되어 있다면 amount에 포함합니다.
+- 함량이 없다면 amount는 빈 문자열로 반환합니다.
+- 명확하게 확인되는 원료만 추출합니다.
+- 일반적인 식품 지식을 바탕으로 원료를 추측하지 않습니다.
+
+예를 들어 다음 문장이 입력되었다면:
+
+"국내산 딸기를 듬뿍 넣어 만든 달콤한 딸기잼"
+
+딸기라는 실제 원료가 문맥상 명확하므로
+ingredients에 딸기를 포함할 수 있습니다.
+
+반면 "딸기향이 나는 제품"이라는 표현만으로
+실제 딸기가 원료로 사용되었다고 단정하지 않습니다.
+
+────────────────────
+[8. nutrition - 영양성분]
+────────────────────
+
+식품에 포함된 영양성분과 그 함량을 추출합니다.
+
+명시적인 영양정보 표뿐 아니라
+일반 문장이나 제품 설명에 포함된 영양성분 정보도 분석합니다.
+
+대상 항목:
+
+- 열량
+- 칼로리
+- 나트륨
+- 탄수화물
+- 당류
+- 지방
+- 트랜스지방
+- 포화지방
+- 콜레스테롤
+- 단백질
+- 식이섬유
+- 비타민
+- 무기질 및 기타 영양성분
+
+판단 기준:
+
+- 실제 영양성분과 함량이 언급되었는지 확인합니다.
+- 수치와 단위는 원문을 유지합니다.
+- 1회 제공량, 총 내용량, 100g당, 100ml당 등의 기준을 포함합니다.
+- 영양성분 표가 있다면 행과 열의 관계를 기준으로 정확하게 연결합니다.
+- 문장 속에 등장하는 영양성분도 의미상 명확하다면 추출합니다.
+- 영양성분 함량을 추측하거나 계산하지 않습니다.
+- 수치가 없는 일반적인 영양 관련 광고 문구는
+  구체적인 함량 정보로 만들어내지 않습니다.
+
+예를 들어:
+
+"단백질 20g 함유"
+→ nutrition에 단백질과 20g을 추출합니다.
+
+"식이섬유가 풍부한 제품"
+→ 식이섬유라는 영양성분은 확인할 수 있지만
+  함량은 확인되지 않으므로 amount를 빈 문자열로 설정합니다.
+
+────────────────────
+[9. 정보 분류 및 중복 처리]
+────────────────────
+
+동일한 정보가 여러 위치에 등장하면
+중복을 제거하고 가장 정확한 표현을 사용합니다.
+
+하나의 문장에 여러 정보가 포함되어 있다면
+각각의 의미를 분리하여 적절한 항목에 배치합니다.
+
+예를 들어:
+
+"국내산 우유 80%를 사용한 고단백 초코우유"
+
+- 식품명: 초코우유 (실제 제품명으로 식별 가능한 경우)
+- 원료: 우유
+- 원료 함량: 80%
+
+단, "고단백"이라는 표현만으로 단백질의 구체적인 함량을 생성하지 않습니다.
+
+────────────────────
+[10. 최종 출력 형식]
+────────────────────
+
+반드시 아래 JSON 구조로 반환합니다.
+
+{
+  "food_name": "",
+  "company_name": "",
+  "report_number": "",
+  "expiration_date": "",
+  "ingredients": [
+    {
+      "name": "",
+      "amount": ""
+    }
+  ],
+  "nutrition": [
+    {
+      "name": "",
+      "amount": ""
+    }
+  ]
+}
+
+빈 항목 처리:
+
+- 문자열 항목은 빈 문자열("")로 반환합니다.
+- 배열 항목은 빈 배열([])로 반환합니다.
+- 확인되지 않은 정보를 임의로 추가하지 않습니다.
+
+[최종 검증]
+
+응답하기 전에 다음을 확인하세요.
+
+1. 식품 표시사항의 명칭뿐 아니라 일반 문맥도 분석했는가?
+2. 명시적인 분류명이 없어도 의미상 명확한 정보를 찾아냈는가?
+3. 식품명과 일반적인 식품 종류를 구분했는가?
+4. 실제 원료와 단순한 맛 또는 향 표현을 구분했는가?
+5. 영양성분과 일반적인 건강 관련 광고 문구를 구분했는가?
+6. 식품 표시사항이 존재할 경우 표의 구조와 기준량을 정확히 활용했는가?
+7. OCR에 없는 정보를 추측하여 생성하지 않았는가?
+8. 모든 항목이 지정된 JSON 구조에 맞는가?
+
+반드시 유효한 JSON 객체만 반환하세요.
+Markdown 코드 블록이나 별도의 설명은 출력하지 마세요.
+
+[OCR 원문]
+
+{{OCR_RESULT}}
+"""
+
+FOOD_IMAGE_OCR_MODEL = "qwen/qwen3-vl-30b-a3b-instruct"
+FOOD_INFO_CLASSIFICATION_MODEL = "openai/gpt-6-luna"
 
 
 def extract_food_info_from_image(image_bytes, content_type):
-  """Qwen3-VL을 사용해 식품 사진의 표시 정보를 추출한다."""
+  """Qwen으로 이미지 텍스트를 추출하고 GPT-6 Luna로 식품 정보를 분류한다."""
   if not OPENROUTER_API_KEY:
     raise RuntimeError(
         "OPENROUTER_API_KEY가 설정되지 않았습니다. backend/.env에 설정해주세요."
@@ -612,23 +960,71 @@ def extract_food_info_from_image(image_bytes, content_type):
       base_url="https://openrouter.ai/api/v1",
   )
   response = client.chat.completions.create(
-      model=FOOD_IMAGE_VISION_MODEL,
+      model=FOOD_IMAGE_OCR_MODEL,
       temperature=0,
-      max_tokens=1500,
+      max_tokens=4000,
       response_format={"type": "json_object"},
       messages=[
-          {"role": "system", "content": FOOD_IMAGE_EXTRACTION_PROMPT},
+          {"role": "system", "content": FOOD_IMAGE_OCR_PROMPT},
           {
               "role": "user",
               "content": [
-                  {"type": "text", "text": "사진 속 식품 정보를 추출해주세요."},
+                  {"type": "text", "text": "이미지에 보이는 모든 텍스트를 추출해주세요."},
                   {"type": "image_url", "image_url": {"url": image_url}},
               ],
           },
       ],
   )
 
-  return response.choices[0].message.content
+  try:
+    ocr_response = json.loads(response.choices[0].message.content)
+  except (json.JSONDecodeError, TypeError) as error:
+    raise InvalidAIResponseError("OCR 모델 응답을 JSON으로 읽을 수 없습니다.") from error
+
+  if not isinstance(ocr_response, dict):
+    raise InvalidAIResponseError("OCR 모델 응답 형식이 올바르지 않습니다.")
+
+  raw_text = ocr_response.get("raw_text")
+  if not isinstance(raw_text, str):
+    raise InvalidAIResponseError("OCR 모델 응답에 raw_text 문자열이 없습니다.")
+
+  classification_system_prompt = FOOD_INFO_CLASSIFICATION_PROMPT.replace(
+      "{{OCR_RESULT}}", ""
+  )
+  classification_input = f"[OCR 원문]\n{raw_text}"
+  classification_response = ask_openrouter(
+      input_data=classification_input,
+      max_tokens=5000,
+      model=FOOD_INFO_CLASSIFICATION_MODEL,
+      system_prompt=classification_system_prompt,
+  )
+
+  if not _is_json_object(classification_response):
+    print("[식품 정보 분류] JSON 응답 오류, 한 번 재시도합니다.")
+    classification_response = ask_openrouter(
+        input_data=(
+            f"{classification_input}\n\n"
+            "[이전 응답]\n"
+            f"{classification_response}\n\n"
+            "이전 응답의 형식이 유효한 JSON 객체가 아닙니다. "
+            "OCR 원문을 기준으로 다시 분류하고 유효한 JSON 객체만 반환하세요."
+        ),
+        max_tokens=5000,
+        model=FOOD_INFO_CLASSIFICATION_MODEL,
+        system_prompt=classification_system_prompt,
+    )
+
+  return classification_response
+
+
+def _is_json_object(response_text):
+  if not isinstance(response_text, str) or not response_text.strip():
+    return False
+
+  try:
+    return isinstance(json.loads(response_text), dict)
+  except json.JSONDecodeError:
+    return False
 
 
 #======================================================
@@ -636,18 +1032,29 @@ def extract_food_info_from_image(image_bytes, content_type):
 #======================================================
 limit_try_count = 2
 
-def retry_ask(try_count, question, max_tokens=1024, target_model=None, use_fixed_prompt=False):
+def retry_ask(try_count, question, max_tokens=1024, target_model=None, system_prompt=None):
     """
     AI 요청을 재시도한다.
     target_model로 "claude-3.5-sonnet", "gpt-4o-mini", "gpt-5-mini"
     또는 "gpt-6-luna"를 지정하면 해당 OpenRouter 모델을 먼저 시도한다.
     """
     try:
-        answer = ask_ai_with_fallback(question=question, max_tokens=max_tokens, target_model=target_model, use_fixed_prompt=use_fixed_prompt)
+        answer = ask_ai_with_fallback(
+            question=question,
+            max_tokens=max_tokens,
+            target_model=target_model,
+            system_prompt=system_prompt,
+        )
         return answer[0]
     except failed_ask_ai as e:
         if try_count < limit_try_count:
-            return retry_ask(try_count=try_count + 1, question=question, max_tokens=max_tokens, target_model=target_model, use_fixed_prompt=use_fixed_prompt)
+            return retry_ask(
+                try_count=try_count + 1,
+                question=question,
+                max_tokens=max_tokens,
+                target_model=target_model,
+                system_prompt=system_prompt,
+            )
         else:
             print(f"ai 요청 시도 {try_count}회 실패.")
             return "요청 실패"
@@ -660,7 +1067,7 @@ def ask_openrouter(
     input_data,
     max_tokens=1024,
     model="anthropic/claude-3.5-sonnet",
-    use_fixed_prompt=False,
+    system_prompt=None,
 ):
   """OpenRouter를 통해 지정된 모델에 요청한다."""
   if not OPENROUTER_API_KEY:
@@ -672,9 +1079,8 @@ def ask_openrouter(
 
   messages = []
 
-  # 고정 프롬프트 사용 여부에 따른 분기
-  if use_fixed_prompt:
-    messages.append({"role": "system", "content": FIXED_SYSTEM_PROMPT})
+  if system_prompt:
+    messages.append({"role": "system", "content": system_prompt})
 
   messages.append({"role": "user", "content": input_data})
 
@@ -703,7 +1109,7 @@ def ask_openrouter(
 # 폴백 및 우선순위 변경 함수
 # =====================================================
 
-def ask_ai_with_fallback(question, max_tokens=1024, target_model=None, use_fixed_prompt=False):
+def ask_ai_with_fallback(question, max_tokens=1024, target_model=None, system_prompt=None):
     """
     OpenRouter 모델을 우선순위에 따라 시도한다.
     target_model을 지정하면 해당 모델을 먼저 시도하고 나머지는 폴백으로 사용한다.
@@ -743,7 +1149,7 @@ def ask_ai_with_fallback(question, max_tokens=1024, target_model=None, use_fixed
                 input_data=question,
                 max_tokens=max_tokens,
                 model=model,
-                use_fixed_prompt=use_fixed_prompt,
+                system_prompt=system_prompt,
             )
             print(f"  ✅ {name} 성공!\n")
             return answer, name

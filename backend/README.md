@@ -11,7 +11,7 @@
 
 ## 식품 분석 기능
 
-- `POST /aiAsk/extract-food-info`는 JPEG, PNG 또는 WEBP 이미지(최대 10MB)를 받아 OpenRouter의 `qwen/qwen3-vl-30b-a3b-instruct`로 식품명, 업체명, 품목보고번호, 소비기한, 원료 및 표시된 영양성분을 추출합니다. 사진에서 확인되지 않는 정보는 추측하지 않으며, 프런트엔드는 결과를 분석 입력란에 채웁니다. 이 기능에도 `OPENROUTER_API_KEY` 설정이 필요합니다. 비전 모델 제공자 오류는 502로 반환하고 백엔드 로그에 기록합니다.
+- `POST /aiAsk/extract-food-info`는 JPEG, PNG 또는 WEBP 이미지(최대 10MB)를 받아 OpenRouter의 `qwen/qwen3-vl-30b-a3b-instruct`로 이미지의 원문 텍스트를 OCR한 뒤 `openai/gpt-6-luna`로 식품명, 업체명, 품목보고번호, 소비기한, 원료 및 영양성분을 분류합니다. 분류 응답이 유효한 JSON이 아니면 GPT-6 Luna에 한 번 재요청합니다. 프런트엔드는 기존과 같은 구조화된 결과를 분석 입력란에 채웁니다. 이 기능에도 `OPENROUTER_API_KEY` 설정이 필요합니다. 모델 제공자 오류는 502로 반환하고 백엔드 로그에 기록합니다.
 - `POST /aiAsk/canIEat`은 식품명, 제조일·소비기한, 원재료, 알레르기 및 개인 주의사항을 바탕으로 AI 분석을 수행하며, 선택 입력 `consumption_amount`(예: `1개 (30g)`)도 분석에 전달합니다. 결과에는 알레르기 성분 매칭, 소비기한 판정, 주의사항 및 분석 불확실성이 반영되며, 종합 위험도는 `safe`, `caution`, `unsafe` 중 하나입니다.
 - `GET /getFoodDetail/`은 `food_name`, `report_number`, `company_name` 쿼리 매개변수로 식품 상세 정보를 조회합니다.
   - 식품안전나라 검색 결과를 우선하며, 식약처 영양성분 API에서 같은 품목보고번호가 확인되면 해당 식품을 선택합니다. 식약처 결과나 키가 없으면 식품안전나라 결과를 사용합니다.

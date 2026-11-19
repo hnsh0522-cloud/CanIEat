@@ -2,7 +2,7 @@ import json
 
 from fastapi.concurrency import run_in_threadpool
 
-from app.api.aiAsk_aiAPI import extract_food_info_from_image
+from app.api.aiAsk_aiAPI import InvalidAIResponseError, extract_food_info_from_image
 
 
 MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
@@ -39,29 +39,32 @@ def _normalize_entries(value, field_name):
 
 def _parse_food_info(response_text):
     if not isinstance(response_text, str) or not response_text.strip():
-        raise ValueError("AI가 식품 정보를 반환하지 않았습니다.")
+        raise InvalidAIResponseError("AI가 식품 정보를 반환하지 않았습니다.")
 
     try:
         result = json.loads(response_text)
     except json.JSONDecodeError as error:
-        raise ValueError("AI 식품 정보 응답을 JSON으로 읽을 수 없습니다.") from error
+        raise InvalidAIResponseError("AI 식품 정보 응답을 JSON으로 읽을 수 없습니다.") from error
 
     if not isinstance(result, dict):
-        raise ValueError("AI 식품 정보 응답 형식이 올바르지 않습니다.")
+        raise InvalidAIResponseError("AI 식품 정보 응답 형식이 올바르지 않습니다.")
 
     normalized = {}
     for field in ("food_name", "company_name", "report_number", "expiration_date"):
         value = result.get(field, "")
         if not isinstance(value, str):
-            raise ValueError(f"{field}는 문자열이어야 합니다.")
+            raise InvalidAIResponseError(f"{field}는 문자열이어야 합니다.")
         normalized[field] = value.strip()
 
-    normalized["ingredients"] = _normalize_entries(
-        result.get("ingredients", []), "ingredients"
-    )
-    normalized["nutrition"] = _normalize_entries(
-        result.get("nutrition", []), "nutrition"
-    )
+    try:
+        normalized["ingredients"] = _normalize_entries(
+            result.get("ingredients", []), "ingredients"
+        )
+        normalized["nutrition"] = _normalize_entries(
+            result.get("nutrition", []), "nutrition"
+        )
+    except ValueError as error:
+        raise InvalidAIResponseError(str(error)) from error
     return normalized
 
 
