@@ -1,0 +1,4 @@
+deploy.sh text eol=lf
+deploy-local.sh text eol=lf
+redeploy.sh text eol=lf
+redeploy-local.sh text eol=lf

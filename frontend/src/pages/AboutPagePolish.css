@@ -1,0 +1,236 @@
+
+/* AboutPage의 기존 소개 영역만 변경 */
+
+.about-polish > main {
+  font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+}
+
+/* 1. 상단 서비스 소개 */
+
+.about-polish > main > section:first-of-type {
+  position: relative;
+  overflow: hidden;
+  padding: 64px 28px;
+  border: 1px solid #dcece9;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 90% 10%, #d9f4ec, transparent 36%),
+    linear-gradient(135deg, #ffffff, #f5fbf9);
+  box-shadow: 0 18px 40px -32px rgba(15, 118, 110, 0.3);
+}
+
+.about-polish > main > section:first-of-type::before {
+  content: "서비스 소개";
+  display: table;
+  margin: 0 auto 24px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #e2f5ef;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.about-polish > main > section:first-of-type h1 {
+  font-size: clamp(29px, 3vw, 40px);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.045em;
+}
+
+.about-polish > main > section:first-of-type h1::after {
+  content: "";
+  display: block;
+  width: 54px;
+  height: 4px;
+  margin: 22px auto 0;
+  border-radius: 999px;
+  background: #0d9488;
+}
+
+.about-polish > main > section:first-of-type p {
+  max-width: 680px;
+  margin: 21px auto 0;
+  color: #52657a;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* 2. 서비스 특징 카드 */
+
+.about-polish > main > section:nth-of-type(2) {
+  margin-top: 42px;
+  gap: 18px;
+}
+
+.about-polish > main > section:nth-of-type(2) > article {
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 7px 25px -20px rgba(15, 23, 42, 0.22);
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease,
+    border-color 250ms ease;
+}
+
+.about-polish > main > section:nth-of-type(2) > article:hover {
+  transform: translateY(-6px);
+  border-color: #a9dbd1;
+  box-shadow: 0 20px 38px -24px rgba(15, 118, 110, 0.28);
+}
+
+.about-polish > main > section:nth-of-type(2) > article::before {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 22px;
+  border-radius: 16px;
+  background: #e1f3ee;
+  color: #0f766e;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.about-polish > main > section:nth-of-type(2) > article:nth-child(1)::before {
+  content: "01";
+}
+
+.about-polish > main > section:nth-of-type(2) > article:nth-child(2)::before {
+  content: "02";
+}
+
+.about-polish > main > section:nth-of-type(2) > article:nth-child(3)::before {
+  content: "03";
+}
+
+.about-polish > main > section:nth-of-type(2) > article h2 {
+  color: #173048;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.about-polish > main > section:nth-of-type(2) > article p {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* 3. 사용 방법 3단계 */
+
+.about-polish > main > section:nth-of-type(3) {
+  margin-top: 76px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.about-polish > main > section:nth-of-type(3) > h2 {
+  color: #173048;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.about-polish > main > section:nth-of-type(3) > ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.about-polish > main > section:nth-of-type(3) > ol > li {
+  min-height: 148px;
+  margin: 0;
+  padding: 28px 24px;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #0d9488;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.8;
+  box-shadow: 0 7px 25px -20px rgba(15, 23, 42, 0.22);
+  transition: transform 250ms ease;
+}
+
+.about-polish > main > section:nth-of-type(3) > ol > li:hover {
+  transform: translateY(-4px);
+}
+
+/* 4. 다크 모드 */
+
+.about-polish.is-dark > main > section:first-of-type {
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    radial-gradient(circle at 90% 10%, #174c53, transparent 40%),
+    linear-gradient(135deg, #1e293b, #172738);
+}
+
+.about-polish.is-dark > main > section:first-of-type::before,
+.about-polish.is-dark > main > section:nth-of-type(2) > article::before {
+  background: rgba(103, 232, 249, 0.12);
+  color: #67e8f9;
+}
+
+.about-polish.is-dark > main > section:first-of-type h1::after {
+  background: #67e8f9;
+}
+
+.about-polish.is-dark > main > section:first-of-type p,
+.about-polish.is-dark > main > section:nth-of-type(2) > article p {
+  color: #cbd5e1;
+}
+
+.about-polish.is-dark > main > section:nth-of-type(2) > article,
+.about-polish.is-dark > main > section:nth-of-type(3) > ol > li {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.about-polish.is-dark > main > section:nth-of-type(2) > article h2,
+.about-polish.is-dark > main > section:nth-of-type(3) > h2 {
+  color: #f8fafc;
+}
+
+.about-polish.is-dark > main > section:nth-of-type(3) > ol > li {
+  border-top-color: #67e8f9;
+}
+
+/* 5. 모바일 반응형 */
+
+@media (max-width: 767px) {
+  .about-polish > main > section:first-of-type {
+    padding: 44px 20px;
+  }
+
+  .about-polish > main > section:nth-of-type(3) > ol {
+    grid-template-columns: 1fr;
+  }
+
+  .about-polish > main > section:nth-of-type(3) > ol > li {
+    min-height: 0;
+  }
+}
+
+/* 움직임 최소화 설정 */
+
+@media (prefers-reduced-motion: reduce) {
+  .about-polish > main > section:nth-of-type(2) > article,
+  .about-polish > main > section:nth-of-type(3) > ol > li {
+    transition: none;
+  }
+
+  .about-polish > main > section:nth-of-type(2) > article:hover,
+  .about-polish > main > section:nth-of-type(3) > ol > li:hover {
+    transform: none;
+  }
+}

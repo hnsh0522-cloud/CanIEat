@@ -1,0 +1,13 @@
+backend/  fastapi 폴더
+├─ app/
+│  ├─ api/                       외부 API 연동
+│  ├─ controller/               기능별 처리 로직
+│  ├─ crud/                     DB 생성·조회·수정·삭제
+│  ├─ models/                  DB 테이블 모델
+│  ├─ routers/                  HTTP 엔드포인트
+│  ├─ schemas/                요청·응답 데이터 형식
+│  ├─ utils/                      인증·비밀번호·날짜 등 공통 기능
+│  ├─ main.py                  FastAPI 앱 및 라우터 등록
+│  └─ database.py             DB 연결
+├─ Dockerfile                    백엔드 이미지 빌드
+├─ requirements.txt            필요 패키지 파일
