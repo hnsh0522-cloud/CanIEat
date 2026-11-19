@@ -1,0 +1,46 @@
+k8s/
+|-- README.md
+|   `-- Helm 설치, 클러스터 준비, 배포 및 점검 방법
+|-- k8s directory structure.txt
+|   `-- 이 폴더와 Helm 차트 파일의 구조 및 역할
+|-- .gitignore
+|   `-- secrets.yaml, cluster-issuer.yaml 같은 실제 설정 파일을 Git에서 제외
+|-- kind-config.yaml
+|   `-- 로컬 kind 클러스터 노드, 포트 매핑, 컨테이너 레지스트리 설정
+|-- nginx-ingress-controller.yaml
+|   `-- 외부 HTTP/HTTPS 요청을 받는 NGINX Ingress Controller
+|-- cert-manager.yaml
+|   `-- TLS 인증서를 발급하고 갱신하는 cert-manager
+|-- cluster-issuer.yaml
+|   `-- cert-manager가 사용할 실제 Let's Encrypt 발급자 설정
+|-- secrets-example.yaml
+|   `-- DB 비밀번호와 API 키 등을 채울 Kubernetes Secret
+`-- charts/
+    `-- canieat/
+        |-- Chart.yaml
+        |   `-- Helm 차트 이름, 버전, 설명
+        |-- values.yaml
+        |   `-- 이미지, 저장공간, Secret 이름, Ingress 기본 설정
+        |-- files/
+        |   `-- nginx.conf
+        |       `-- 프런트엔드 Nginx 설정; 차트가 ConfigMap으로 배포
+        `-- templates/
+            |-- _helpers.tpl
+            |   `-- 템플릿에서 공통으로 사용하는 Helm 라벨
+            |-- postgres.yaml
+            |   `-- PostgreSQL PVC, Deployment, Service
+            |-- backend.yaml
+            |   `-- FastAPI Deployment와 Service
+            |-- frontend.yaml
+            |   `-- Nginx ConfigMap, 프런트엔드 Deployment와 Service
+            `-- ingress.yaml
+                `-- 도메인, TLS, 프런트엔드 Service 연결 규칙
+
+배포 흐름
+---------
+1. kind-config.yaml로 로컬 Kubernetes 클러스터를 준비합니다.
+2. Ingress Controller와 cert-manager 매니페스트를 설치합니다.
+3. secrets.yaml과 cluster-issuer.yaml을 준비합니다.
+4. deploy.sh 또는 deploy-local.sh가 charts/canieat Helm 차트를 설치/업그레이드합니다.
+
+참고: 저장소 루트의 deploy.sh와 deploy-local.sh는 Docker 이미지 빌드 및 push도 수행합니다.
