@@ -1,0 +1,34 @@
+images:
+  postgres:
+    repository: localhost:5001/canieat-db
+    tag: dev
+    pullPolicy: Always
+  backend:
+    repository: localhost:5001/canieat-backend
+    tag: dev
+    pullPolicy: Always
+  frontend:
+    repository: localhost:5001/canieat-frontend
+    tag: prod
+    pullPolicy: Always
+
+secrets:
+  name: canieat-secrets
+
+postgres:
+  storage: 1Gi
+
+backend:
+  refreshTokenCookieSecure: "true"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: canieat.kro.kr
+  tlsSecretName: canieat-kro-kr-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "12m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"

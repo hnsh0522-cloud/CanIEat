@@ -21,6 +21,8 @@ case "$TARGET" in
 esac
 
 echo "=== Kubernetes 및 Docker 연결 확인 ==="
+command -v helm >/dev/null 2>&1 || { echo "❌ helm이 설치되어 있지 않습니다."; exit 1; }
+helm upgrade --help | grep -q -- '--take-ownership' || { echo "❌ 기존 Kubernetes 리소스 인계를 위해 Helm 3.17 이상이 필요합니다."; exit 1; }
 docker version >/dev/null 2>&1 || { echo "❌ Docker가 실행 중이거나 연결되어 있지 않습니다."; exit 1; }
 kubectl config current-context || { echo "❌ 활성화된 Kubernetes 컨텍스트가 없습니다."; exit 1; }
 kubectl get nodes || { echo "❌ Kubernetes 클러스터에 접근할 수 없습니다."; exit 1; }
@@ -65,16 +67,10 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "frontend" ]; then
     docker push localhost:5001/canieat-frontend:prod
 fi
 
-echo "=== Kubernetes Secret 및 ConfigMap 적용 ==="
+echo "=== Kubernetes Secret 적용 ==="
 kubectl apply -f k8s/secrets.yaml
 
-if [ "$TARGET" = "all" ] || [ "$TARGET" = "frontend" ]; then
-    kubectl create configmap frontend-nginx-config \
-      --from-file=default.conf=frontend/nginx.conf \
-      --dry-run=client -o yaml | kubectl apply -f -
-fi
-
-kubectl apply -f k8s/app.yaml
+helm upgrade --install canieat k8s/charts/canieat --take-ownership
 
 echo "=== 앱 Deployment 순차 재시작 및 상태 확인 ==="
 for deployment in postgres fastapi frontend; do

@@ -6,10 +6,11 @@
 set -euo pipefail
 
 echo "=== 배포 전 필수 도구 및 파일 확인 ==="
-for command in docker kubectl kind; do
+for command in docker kubectl kind helm; do
     command -v "$command" >/dev/null 2>&1 || { echo "❌ $command가 설치되어 있지 않습니다."; exit 1; }
 done
-for file in k8s/app.yaml frontend/nginx.conf; do
+helm upgrade --help | grep -q -- '--take-ownership' || { echo "❌ 기존 Kubernetes 리소스 인계를 위해 Helm 3.17 이상이 필요합니다."; exit 1; }
+for file in k8s/charts/canieat/Chart.yaml k8s/charts/canieat/files/nginx.conf; do
     [ -f "$file" ] || { echo "❌ $file 파일이 없습니다."; exit 1; }
 done
 [ -f "k8s/secrets.yaml" ] || { echo "❌ k8s/secrets.yaml 파일이 없습니다. secrets-example.yaml을 참고하여 생성해주세요."; exit 1; }
@@ -53,15 +54,11 @@ docker push localhost:5001/canieat-db:dev
 docker push localhost:5001/canieat-backend:dev
 docker push localhost:5001/canieat-frontend:prod
 
-echo "=== [4/5] Kubernetes Secret 및 ConfigMap 설정 ==="
+echo "=== [4/5] Kubernetes Secret 설정 ==="
 kubectl apply -f k8s/secrets.yaml
 
-kubectl create configmap frontend-nginx-config \
-  --from-file=default.conf=frontend/nginx.conf \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-echo "=== [5/5] 애플리케이션(DB, FastAPI, Frontend) 배포 ==="
-kubectl apply -f k8s/app.yaml
+echo "=== [5/5] Helm으로 애플리케이션(DB, FastAPI, Frontend) 배포 ==="
+helm upgrade --install canieat k8s/charts/canieat --take-ownership
 
 echo "롤아웃 상태 확인 중..."
 kubectl rollout status deployment/postgres --timeout=120s

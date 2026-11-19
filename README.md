@@ -21,6 +21,10 @@ npm run preview        # 빌드 결과 미리보기
 - SPA 라우팅을 위해 `vercel.json`, `public/_redirects`가 포함되어 있습니다.
 - 모바일 브라우저에서 홈 화면에 추가하면 PWA처럼 사용할 수 있습니다.
 
+## Kubernetes 배포
+
+kind 클러스터에 배포할 때는 Helm 3.17 이상을 설치한 뒤 [Kubernetes 배포 안내](k8s/README.md)를 참고하세요. `deploy.sh`와 `deploy-local.sh`는 Helm 차트로 앱을 배포합니다.
+
 ## 주요 기능
 
 - 식품 성분 분석 및 알레르기 위험도 판단

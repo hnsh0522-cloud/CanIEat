@@ -1,6 +1,6 @@
 # CanIEat Kubernetes 배포 (WSL 2 + Docker Desktop kind)
 
-이 문서는 Windows의 Docker Desktop에서 WSL Ubuntu를 사용해 포트 매핑이 설정된 새 kind 클러스터를 만들고 CanIEat을 배포하는 방법을 정리합니다. WSL에서 `kind`, `kubectl` 명령을 사용할 수 있어야 하며, Docker가 실행 중이고 Ubuntu에서 Docker Desktop 엔진에 연결되어 있어야 합니다.
+이 문서는 Windows의 Docker Desktop에서 WSL Ubuntu를 사용해 포트 매핑이 설정된 새 kind 클러스터를 만들고 CanIEat을 배포하는 방법을 정리합니다. WSL에서 `kind`, `kubectl`, Helm 3.17 이상 명령을 사용할 수 있어야 하며, Docker가 실행 중이고 Ubuntu에서 Docker Desktop 엔진에 연결되어 있어야 합니다. Helm은 기존 `kubectl apply` 리소스를 차트가 관리하도록 인계하는 `--take-ownership` 옵션을 사용합니다. Helm 설치 방법은 [공식 설치 안내](https://helm.sh/docs/intro/install/)를 참고하세요.
 
 > **로컬에서만 접속하려는 경우:** 새 kind 클러스터를 만들 필요가 없으며, 따라서 kind 설치 과정도 건너뛸 수 있습니다. 이미 사용할 수 있는 Kubernetes 클러스터가 있다면 `kubectl config current-context`와 `kubectl get nodes`로 연결을 확인하고, 그 클러스터에 애플리케이션을 배포한 뒤 `kubectl port-forward service/frontend 8081:80`으로 접속하세요. 브라우저에서는 `http://localhost:8081`을 엽니다. 단, Kubernetes 클러스터 자체는 필요하며, 앱이 아직 배포되지 않았다면 이 문서의 이미지 준비와 Secret/ConfigMap, 앱 배포 절차는 진행해야 합니다. 로컬 포트 포워딩은 공개 도메인 접속이나 HTTPS를 설정하지 않습니다.
 
@@ -11,7 +11,73 @@
 - 프런트엔드: Nginx 정적 파일 서버 및 `/api/` 요청의 FastAPI 프록시
 - 외부 접속: NGINX Ingress Controller를 통해 `canieat.kro.kr`로 연결
 - HTTPS: cert-manager와 Let's Encrypt가 TLS 인증서를 자동 발급/갱신
-- 이미지 레지스트리: 아래 예시는 `localhost:5001`을 사용합니다. 현재 `app.yaml`의 이미지 이름과 일치해야 합니다.
+- 이미지 레지스트리: 아래 예시는 `localhost:5001`을 사용합니다. 기본 이미지 이름과 태그는 `charts/canieat/values.yaml`에 정의되어 있습니다.
+
+## 빠른 시작: Helm 설치부터 배포까지
+
+아래 명령은 Docker Desktop이 실행 중이고 WSL Ubuntu 통합이 활성화된 환경을 기준으로 합니다. `docker`, `kubectl`, `kind`와 Helm 3.17 이상이 필요합니다. 이 저장소의 배포 스크립트는 기존 kubectl 리소스를 Helm으로 인계하는 `--take-ownership` 옵션을 사용합니다.
+
+### 1. WSL Ubuntu에 Helm 설치
+
+다음 예시는 Helm 3.17.3 Linux 바이너리를 내려받고 checksum을 확인합니다. x86_64와 ARM64를 지원합니다.
+
+```bash
+HELM_VERSION=v3.17.3
+case "$(uname -m)" in
+  x86_64) HELM_ARCH=amd64 ;;
+  aarch64|arm64) HELM_ARCH=arm64 ;;
+  *) echo "지원하지 않는 아키텍처: $(uname -m)"; exit 1 ;;
+esac
+
+HELM_ARCHIVE="helm-${HELM_VERSION}-linux-${HELM_ARCH}.tar.gz"
+curl -fsSLO "https://get.helm.sh/${HELM_ARCHIVE}"
+curl -fsSLO "https://get.helm.sh/${HELM_ARCHIVE}.sha256sum"
+sha256sum --check "${HELM_ARCHIVE}.sha256sum"
+tar -xzf "$HELM_ARCHIVE"
+sudo install -m 0755 "linux-${HELM_ARCH}/helm" /usr/local/bin/helm
+rm -rf "linux-${HELM_ARCH}" "$HELM_ARCHIVE" "${HELM_ARCHIVE}.sha256sum"
+
+helm version --short
+helm upgrade --help | grep -- --take-ownership
+```
+
+checksum 검증이 실패하면 설치를 진행하지 말고 다시 다운로드하세요. 마지막 명령에서 `--take-ownership`이 표시되는지 확인합니다.
+
+### 2. Secret 및 도메인 설정 준비
+
+`k8s/secrets.yaml`이 아직 없다면 저장소 루트에서 예시 파일을 복사하고 실제 DB 비밀번호와 API 키를 설정합니다. 실제 비밀 값이 있는 파일을 덮어쓰지 않도록 아래처럼 파일이 없을 때만 복사하세요. 이 파일은 Git에 커밋하거나 공유하지 마세요. 도메인/HTTPS 배포를 하려면 ClusterIssuer 예시도 같은 방법으로 복사한 뒤 실제 이메일 주소를 입력합니다.
+
+```bash
+[ -f k8s/secrets.yaml ] || cp k8s/secrets-example.yaml k8s/secrets.yaml
+[ -f k8s/cluster-issuer.yaml ] || cp k8s/cluster-issuer-example.yaml k8s/cluster-issuer.yaml
+```
+
+### 3. 배포 실행
+
+전체 kind 클러스터 생성, 로컬 이미지 레지스트리 설정, 이미지 빌드/push, Ingress 및 cert-manager 설치까지 자동으로 진행하려면 저장소 루트에서 실행합니다.
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+`deploy.sh`는 마지막에 `canieat` Helm 릴리스로 앱 차트를 설치/업그레이드합니다. 기존에 kubectl로 생성한 앱 리소스가 있으면 `--take-ownership`으로 Helm에 인계합니다. 로컬 kind 클러스터가 이미 준비되어 있고 앱만 배포하려면 `deploy-local.sh`를 사용합니다.
+
+```bash
+chmod +x deploy-local.sh
+./deploy-local.sh
+kubectl port-forward service/frontend 8081:80
+```
+
+다른 터미널에서 `http://localhost:8081`을 엽니다. 도메인 배포 상태는 다음 명령으로 확인할 수 있습니다.
+
+```bash
+helm status canieat
+kubectl get pods,pvc,services,ingress
+kubectl get certificate
+```
+
+이미지 변경을 재배포하려면 `./redeploy.sh all`을 실행합니다. `db`, `backend`, `frontend` 인자를 주면 해당 구성요소만 빌드/푸시하고 재시작합니다.
 
 ## 1. kind 설치 및 클러스터 생성
 
@@ -42,7 +108,7 @@ kind version
 
 위 예시는 kind `v0.33.0`을 설치합니다. 다른 버전을 사용하려면 다운로드 URL의 버전도 함께 변경하세요. `kubectl`도 설치되어 있어야 합니다. Docker Desktop의 WSL Integration이 꺼져 있거나 Docker 엔진이 실행되지 않으면 kind 클러스터를 만들 수 없습니다.
 
->**아래의 과정을 거치기 귀찮다면:** 만약 kind 설치까지 정상적으로 다 되어 있다면 아래의 과정을 거치지 않고 deploy-local.sh 혹은 deploy.sh 파일을 실행해서 배포를 한 번에 할 수 있습니다. deploy-local.sh은 로컬 전용 접속 배포이고 deploy.sh는 도메인 접속 배포입니다. 파일 실행 권한 부여 후 파일을 실행하면 됩니다.
+>**아래의 과정을 거치기 귀찮다면:** kind, Helm, Docker가 준비되어 있다면 deploy-local.sh 혹은 deploy.sh 파일을 실행해서 배포를 한 번에 할 수 있습니다. deploy-local.sh은 로컬 포트 포워딩 접속용이며 deploy.sh는 도메인 접속을 위한 Ingress와 HTTPS 설정을 포함합니다. 파일 실행 권한 부여 후 실행하세요.
 
 ### 1.2. 새 kind 클러스터 생성
 
@@ -72,13 +138,7 @@ kubectl get nodes
 
 ## 2. 로컬 레지스트리 생성 및 확인
 
-이 저장소의 현재 매니페스트는 다음 이미지를 참조합니다.
-
-```text
-localhost:5001/canieat-db:dev
-localhost:5001/canieat-backend:dev
-localhost:5001/canieat-frontend:prod
-```
+이 저장소 Helm 차트의 기본 이미지 주소와 태그는 `k8s/charts/canieat/values.yaml`에 정의되어 있습니다. 이미지 레지스트리나 태그를 변경할 때는 해당 파일을 수정하거나 Helm `--set` 옵션을 사용합니다.
 
 레지스트리가 아직 없다면 Ubuntu에서 Docker가 연결된 Docker Desktop 엔진에 다음 컨테이너를 한 번 생성합니다. 데이터는 Docker 볼륨에 보관됩니다. `-p 5001:5000`은 호스트의 모든 네트워크 인터페이스에 포트를 공개하므로, 이 로컬 개발용 레지스트리를 인터넷에 노출하지 마세요. 호스트 방화벽에서 외부 접근을 차단하고 신뢰할 수 있는 네트워크에서만 사용합니다.
 
@@ -99,7 +159,7 @@ docker port canieat-registry
 curl http://localhost:5001/v2/
 ```
 
-`curl`이 `{}`를 반환하면 레지스트리가 응답하는 것입니다. 호스트 포트 `5001`은 레지스트리 컨테이너의 `5000` 포트로 연결됩니다. 따라서 Docker 네트워크 안에서 컨테이너 이름으로 접속할 때는 `canieat-registry:5000`을 사용합니다. 빌드 태그와 `k8s/app.yaml`의 이미지 주소는 호스트에서 push/pull하는 주소인 `localhost:5001`을 유지합니다.
+`curl`이 `{}`를 반환하면 레지스트리가 응답하는 것입니다. 호스트 포트 `5001`은 레지스트리 컨테이너의 `5000` 포트로 연결됩니다. 따라서 Docker 네트워크 안에서 컨테이너 이름으로 접속할 때는 `canieat-registry:5000`을 사용합니다. 이미지 태그와 차트 기본값은 호스트에서 push/pull하는 주소인 `localhost:5001`을 사용합니다.
 
 kind 노드 컨테이너가 레지스트리에 접근할 수 있도록 레지스트리를 `kind` Docker 네트워크에 연결합니다. `docker network connect`를 이미 실행했다면 다시 실행할 필요는 없습니다.
 
@@ -152,29 +212,15 @@ docker push localhost:5001/canieat-frontend:prod
 kubectl apply -f k8s/secrets.yaml
 ```
 
-`secrets-example.yaml`은 예시일 뿐이므로 placeholder 값을 그대로 배포하지 마세요. 실제 비밀 값이 들어간 `secrets.yaml`은 Git에 커밋하거나 공유하지 않습니다. 이미 저장소에 노출된 비밀번호나 API 키가 있다면 안전한 값으로 교체/회전하고 Secret을 다시 적용하세요.
+`secrets-example.yaml`은 예시일 뿐이므로 placeholder 값을 그대로 배포하지 마세요. 실제 비밀 값이 들어간 `secrets.yaml`은 Git에 커밋하거나 공유하지 않습니다. 이미 저장소에 노출된 비밀번호나 API 키가 있다면 안전한 값으로 교체/회전하고 Secret을 다시 적용하세요. Secret은 Helm 릴리스에 저장되지 않으며 배포 스크립트가 별도로 적용합니다.
 
-## 5. 프런트엔드 Nginx ConfigMap 준비
+## 5. Helm 차트와 프런트엔드 Nginx 설정
 
-`app.yaml`은 프런트엔드 컨테이너의 `/etc/nginx/conf.d/default.conf`를 `frontend-nginx-config` ConfigMap에서 마운트합니다. 먼저 현재 프런트엔드 Nginx 설정으로 ConfigMap을 생성하거나 갱신합니다.
+`k8s/charts/canieat` 차트가 PostgreSQL PVC/Deployment/Service, FastAPI Deployment/Service, 프런트엔드 ConfigMap/Deployment/Service, Ingress를 관리합니다. Nginx 설정은 차트의 `files/nginx.conf`에 포함되어 있으며 차트 업그레이드 시 ConfigMap이 갱신되고 프런트엔드 Pod도 자동으로 교체됩니다. 기존 `kubectl apply -f k8s/app.yaml`로 만든 리소스가 있다면 배포 스크립트의 Helm `--take-ownership` 옵션으로 릴리스에 인계합니다. `app.yaml`은 Helm 도입 후 제거되었습니다.
 
-```bash
-kubectl create configmap frontend-nginx-config \
-  --from-file=default.conf=frontend/nginx.conf \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
+Ingress와 프런트엔드 Nginx의 요청 본문 크기 제한은 기본 12MB이며, 식품 사진 API는 10MB까지 받습니다. 설정 변경은 `k8s/charts/canieat/files/nginx.conf` 또는 차트의 `values.yaml`에 반영한 뒤 Helm 업그레이드로 적용합니다.
 
-Ingress와 프런트엔드 Nginx의 요청 본문 크기 제한은 12MB이며, 식품 사진 API는 10MB까지 받습니다. 두 프록시 설정 중 하나라도 갱신되지 않으면 큰 사진 업로드가 `413 Request Entity Too Large`로 거부될 수 있습니다. 변경을 배포할 때는 Ingress 매니페스트와 ConfigMap을 모두 적용하고 프런트엔드 Pod를 재시작합니다.
-
-```bash
-kubectl apply -f k8s/app.yaml
-kubectl create configmap frontend-nginx-config \
-  --from-file=default.conf=frontend/nginx.conf \
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl rollout restart deployment/frontend
-```
-
-프런트엔드 API 요청 경로는 FastAPI 라우트와 끝 슬래시까지 일치시켜야 불필요한 307 리다이렉트를 피할 수 있습니다. 설정 파일이나 ConfigMap 내용을 바꾼 뒤에는 `subPath` 마운트가 새 파일을 자동 반영하지 않으므로 프런트엔드 Pod를 재시작합니다.
+프런트엔드 API 요청 경로는 FastAPI 라우트와 끝 슬래시까지 일치시켜야 불필요한 307 리다이렉트를 피할 수 있습니다. `subPath` 마운트는 ConfigMap 변경을 파일에 자동 반영하지 않지만 차트는 설정 내용의 checksum을 Pod template에 포함하므로 Helm 업그레이드 시 Pod가 교체됩니다.
 
 ## 6. 도메인과 HTTPS 준비
 
@@ -253,7 +299,7 @@ kubectl get clusterissuer letsencrypt-prod
 
 `Ready=True`가 아니거나 인증서 발급이 진행되지 않으면 cert-manager 로그, DNS 전파, Ingress 설정 및 80 포트 연결을 점검합니다.
 
-#### HTTP-01 self-check에서 DNS 조회가 실패하는 경우 (app.yaml 먼저 배포 해야 함)
+#### HTTP-01 self-check에서 DNS 조회가 실패하는 경우 (Helm 차트를 먼저 배포해야 함)
 
 공개 DNS와 외부 접속은 올바른데 cert-manager의 Challenge 상태에 `Waiting for http-01 challenge propagation` 또는 도메인 조회 오류가 계속 표시되는 경우, 클러스터 내부 DNS가 도메인을 공개 IP로 해석한 뒤 외부로 되돌아오는 연결(NAT loopback)을 하지 못하는 환경인지 확인합니다. 이때 CoreDNS에 `canieat.kro.kr`을 Ingress Controller Service의 ClusterIP로 해석하도록 추가하면 클러스터 내부 self-check에 도움이 될 수 있습니다.
 
@@ -300,10 +346,10 @@ kubectl describe challenge -n NAMESPACE CHALLENGE_NAME
 
 ## 7. 배포 및 상태 확인
 
-Secret과 ConfigMap을 만든 뒤 애플리케이션 리소스를 적용합니다.
+Secret을 만든 뒤 Helm 차트로 애플리케이션을 배포합니다. 도메인 접속 배포에서 `cluster-issuer.yaml`도 먼저 적용되어 있어야 합니다.
 
 ```bash
-kubectl apply -f k8s/app.yaml
+helm upgrade --install canieat k8s/charts/canieat --take-ownership
 kubectl get pods,pvc,services
 
 kubectl rollout status deployment/postgres
@@ -319,6 +365,8 @@ kubectl get certificate
 kubectl describe certificate canieat-kro-kr-tls
 kubectl describe ingress canieat-frontend
 ```
+
+`--take-ownership`은 기존의 kubectl 관리 리소스를 최초 Helm 배포에 인계하기 위한 옵션입니다. 차트 설치 후에는 `helm upgrade --install canieat k8s/charts/canieat`만으로 이후 변경을 적용할 수 있습니다. PVC에는 `helm.sh/resource-policy: keep`이 설정되어 있어 릴리스 제거 시에도 DB 데이터 볼륨이 삭제되지 않습니다.
 
 Pod 또는 인증서가 준비되지 않으면 상태, 이벤트, 로그를 확인합니다.
 
