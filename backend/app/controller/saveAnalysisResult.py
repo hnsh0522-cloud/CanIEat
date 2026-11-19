@@ -23,17 +23,23 @@ async def saveAnalysisResult_process(
     unknown_allergies = set()
 
     for detected_ingredient in analysis_result.detected_ingredients:
-        allergy_name = detected_ingredient.allergy
+        allergy_name = detected_ingredient.allergy.strip()
+        ingredient_name = detected_ingredient.ingredient.strip()
         if allergy_name not in allergy_ids_by_name:
             unknown_allergies.add(allergy_name)
             continue
-        detected_ingredients_by_allergy.setdefault(allergy_name, []).append(
-            detected_ingredient.ingredient
-        )
+        if ingredient_name:
+            ingredients = detected_ingredients_by_allergy.setdefault(
+                allergy_name,
+                [],
+            )
+            if ingredient_name not in ingredients:
+                ingredients.append(ingredient_name)
 
     for risk in analysis_result.risk_type:
-        if risk.allergy not in allergy_ids_by_name:
-            unknown_allergies.add(risk.allergy)
+        allergy_name = risk.allergy.strip()
+        if allergy_name not in allergy_ids_by_name:
+            unknown_allergies.add(allergy_name)
 
     if unknown_allergies:
         return {
@@ -44,16 +50,23 @@ async def saveAnalysisResult_process(
 
     allergens = []
     processed_allergies = set()
+    risk_by_allergy = {}
 
     for risk in analysis_result.risk_type:
-        allergy_name = risk.allergy
+        allergy_name = risk.allergy.strip()
+        if allergy_name not in risk_by_allergy:
+            risk_by_allergy[allergy_name] = risk.type
+        elif risk_by_allergy[allergy_name] != "match" and risk.type == "match":
+            risk_by_allergy[allergy_name] = "match"
+
+    for allergy_name, risk_type in risk_by_allergy.items():
         allergy_id = allergy_ids_by_name[allergy_name]
         detected_ingredients = detected_ingredients_by_allergy.get(
             allergy_name, []
         )
         processed_allergies.add(allergy_name)
 
-        if risk.type == "match":
+        if risk_type == "match":
             for ingredient in detected_ingredients:
                 allergens.append({
                     "allergy_id": allergy_id,

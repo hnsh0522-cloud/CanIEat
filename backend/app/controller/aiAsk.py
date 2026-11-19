@@ -14,6 +14,7 @@ def _normalize_allergy_name(
     allergy_name: str,
     allergy_rows: list[dict],
 ) -> str:
+    allergy_name = allergy_name.strip()
     allergies_by_name = {
         allergy["allergy_name"]: allergy
         for allergy in allergy_rows
@@ -45,11 +46,14 @@ def _group_risk_type_by_parent(
     grouped_risk_types = {}
 
     for risk in risk_type:
-        allergy = allergies_by_name.get(risk["allergy"])
+        allergy_name = risk["allergy"].strip()
+        allergy = allergies_by_name.get(allergy_name)
         if allergy is None:
             normalized_risk = risk.copy()
+            normalized_risk["allergy"] = allergy_name
         elif allergy["parent_allergy_id"] is None:
             normalized_risk = risk.copy()
+            normalized_risk["allergy"] = allergy_name
         else:
             parent_allergy = allergies_by_id.get(allergy["parent_allergy_id"])
             if parent_allergy is None:
@@ -83,22 +87,49 @@ def _replace_detected_ingredient_allergies_with_parent(
         for allergy in allergy_rows
     }
     normalized_ingredients = []
+    seen_ingredients = set()
 
     for detected_ingredient in detected_ingredients:
-        allergy = allergies_by_name.get(detected_ingredient["allergy"])
+        ingredient = detected_ingredient["ingredient"].strip()
+        allergy_name = detected_ingredient["allergy"].strip()
+        allergy = allergies_by_name.get(allergy_name)
         if allergy is None or allergy["parent_allergy_id"] is None:
-            normalized_ingredients.append(detected_ingredient)
+            normalized_ingredient = {
+                **detected_ingredient,
+                "ingredient": ingredient,
+                "allergy": allergy_name,
+            }
+            dedupe_key = (ingredient, allergy_name)
+            if dedupe_key not in seen_ingredients:
+                normalized_ingredients.append(normalized_ingredient)
+                seen_ingredients.add(dedupe_key)
             continue
 
         parent_allergy = allergies_by_id.get(allergy["parent_allergy_id"])
         if parent_allergy is None:
-            normalized_ingredients.append(detected_ingredient)
+            normalized_ingredient = {
+                **detected_ingredient,
+                "ingredient": ingredient,
+                "allergy": allergy_name,
+            }
+            dedupe_key = (ingredient, allergy_name)
+            if dedupe_key not in seen_ingredients:
+                normalized_ingredients.append(normalized_ingredient)
+                seen_ingredients.add(dedupe_key)
             continue
 
-        normalized_ingredients.append({
+        normalized_ingredient = {
             **detected_ingredient,
+            "ingredient": ingredient,
             "allergy": parent_allergy["allergy_name"],
-        })
+        }
+        dedupe_key = (
+            ingredient,
+            parent_allergy["allergy_name"],
+        )
+        if dedupe_key not in seen_ingredients:
+            normalized_ingredients.append(normalized_ingredient)
+            seen_ingredients.add(dedupe_key)
 
     return normalized_ingredients
 

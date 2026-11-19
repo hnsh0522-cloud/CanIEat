@@ -50,16 +50,28 @@ async def _get_analysis_records(
                     "result_message": row["result_message"],
                     "created_at": row["created_at"],
                     "detected_allergens": [],
+                    "_detected_allergens_keys": set(),
                 }
                 records_by_id[analysis_id] = record
 
             if row["risk_type"] is not None:
+                dedupe_key = (
+                    row["allergy_id"],
+                    row["detected_ingredient"],
+                    row["risk_type"],
+                )
+                if dedupe_key in record["_detected_allergens_keys"]:
+                    continue
+                record["_detected_allergens_keys"].add(dedupe_key)
                 record["detected_allergens"].append({
                     "allergy_id": row["allergy_id"],
                     "allergy_name": row["allergy_name"],
                     "detected_ingredient": row["detected_ingredient"],
                     "risk_type": row["risk_type"],
                 })
+
+        for record in records_by_id.values():
+            record.pop("_detected_allergens_keys", None)
 
         return {
             "success": True,
@@ -132,7 +144,15 @@ async def save_analysis_result(
 
         analysis_id = result.scalar_one()
 
+        seen_allergens = set()
         for allergen in allergens:
+            dedupe_key = (
+                allergen.get("allergy_id"),
+                allergen.get("detected_ingredient"),
+            )
+            if dedupe_key in seen_allergens:
+                continue
+            seen_allergens.add(dedupe_key)
             await db.execute(
                 text("""
                     INSERT INTO detected_allergens (
