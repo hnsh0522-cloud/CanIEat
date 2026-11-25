@@ -429,12 +429,6 @@ export default function ResultPage() {
           >
             다시 검색하기
           </Link>
-          <Link
-            to="/ai-chat"
-            className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 ${accent.btnSolid}`}
-          >
-            AI에게 질문하기 →
-          </Link>
         </div>
         {saveMessage && (
           <p className="mt-3 text-center text-sm text-green-500" role="status">

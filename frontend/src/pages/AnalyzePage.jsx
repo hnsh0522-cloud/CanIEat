@@ -462,7 +462,9 @@ export default function AnalyzePage() {
             disabled={isLoading}
             className={buttonClassName}
           >
-            사진으로 식품 정보 가져오기
+            {isAnalyzingImage
+              ? "사진 분석 중..."
+              : "사진으로 식품 정보 가져오기"}
           </button>
         </div>
 
