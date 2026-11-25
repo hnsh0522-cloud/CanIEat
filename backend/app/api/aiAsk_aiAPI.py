@@ -962,7 +962,7 @@ def extract_food_info_from_image(image_bytes, content_type):
   response = client.chat.completions.create(
       model=FOOD_IMAGE_OCR_MODEL,
       temperature=0,
-      max_tokens=4000,
+      max_tokens=6000,
       response_format={"type": "json_object"},
       messages=[
           {"role": "system", "content": FOOD_IMAGE_OCR_PROMPT},
@@ -994,7 +994,7 @@ def extract_food_info_from_image(image_bytes, content_type):
   classification_input = f"[OCR 원문]\n{raw_text}"
   classification_response = ask_openrouter(
       input_data=classification_input,
-      max_tokens=5000,
+      max_tokens=6000,
       model=FOOD_INFO_CLASSIFICATION_MODEL,
       system_prompt=classification_system_prompt,
   )
@@ -1009,7 +1009,7 @@ def extract_food_info_from_image(image_bytes, content_type):
             "이전 응답의 형식이 유효한 JSON 객체가 아닙니다. "
             "OCR 원문을 기준으로 다시 분류하고 유효한 JSON 객체만 반환하세요."
         ),
-        max_tokens=5000,
+        max_tokens=6000,
         model=FOOD_INFO_CLASSIFICATION_MODEL,
         system_prompt=classification_system_prompt,
     )
